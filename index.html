@@ -5,314 +5,317 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#07140d">
-<title>РПЛ Football 2026</title>
+<meta name="theme-color" content="#06130c">
+<title>РПЛ Football Career 2026</title>
 <style>
-:root{--safe-l:max(12px,env(safe-area-inset-left));--safe-r:max(12px,env(safe-area-inset-right));--safe-t:max(8px,env(safe-area-inset-top));--safe-b:max(8px,env(safe-area-inset-bottom));}
+:root{--safe-l:max(12px,env(safe-area-inset-left));--safe-r:max(12px,env(safe-area-inset-right));--safe-t:max(8px,env(safe-area-inset-top));--safe-b:max(8px,env(safe-area-inset-bottom));--panel:#0a1b13e8}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
-html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#06110b;color:white;font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"SF Pro Display",Arial,sans-serif}
-button,select{font:inherit}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#06110b;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display",Inter,Arial,sans-serif}
+button{font:inherit;color:inherit}
 .screen{position:fixed;inset:0;display:none}
 .screen.active{display:flex}
-#rotate{display:none;position:fixed;z-index:1000;inset:0;background:#07110b;align-items:center;justify-content:center;text-align:center;padding:30px}
-#rotate .phone{font-size:54px;animation:turn 1.8s infinite}
-@keyframes turn{50%{transform:rotate(90deg)}}
-@media (orientation:portrait){#rotate{display:flex}.screen{display:none!important}}
-#menu{padding:var(--safe-t) var(--safe-r) var(--safe-b) var(--safe-l);background:
-radial-gradient(circle at 25% 20%,#1d5b3d 0,transparent 28%),linear-gradient(135deg,#07140d,#0b281a 55%,#07140d);
-flex-direction:column}
-.topbar{height:60px;display:flex;align-items:center;justify-content:space-between}
-.brand{display:flex;align-items:center;gap:12px;font-weight:900;letter-spacing:.04em;font-size:22px}
-.brand-mark{width:40px;height:40px;border-radius:12px;background:linear-gradient(145deg,#67ff9c,#0a8d4c);display:grid;place-items:center;color:#052513;box-shadow:0 8px 30px #1eff8a33}
-.pill{border:1px solid #ffffff22;background:#ffffff10;border-radius:999px;padding:8px 13px;color:#dfffea;font-size:13px}
-.menu-grid{flex:1;display:grid;grid-template-columns:1.05fr 1.35fr;gap:18px;min-height:0}
-.hero,.selector{border:1px solid #ffffff18;background:#07160fbf;backdrop-filter:blur(18px);border-radius:25px;overflow:hidden}
-.hero{padding:28px;display:flex;flex-direction:column;justify-content:center;position:relative}
-.hero:after{content:"";position:absolute;width:240px;height:240px;border-radius:50%;right:-70px;bottom:-90px;background:#3fff9140;filter:blur(15px)}
-.hero h1{margin:0 0 10px;font-size:clamp(30px,5vw,70px);line-height:.9;letter-spacing:-.06em}
-.hero p{color:#b9cfc2;max-width:530px;line-height:1.45;margin:10px 0 24px;font-size:clamp(13px,1.6vw,17px)}
-.features{display:flex;flex-wrap:wrap;gap:8px}
-.feature{padding:7px 10px;border-radius:10px;background:#ffffff0c;border:1px solid #ffffff12;color:#cce4d5;font-size:12px}
-.selector{padding:18px;display:flex;flex-direction:column;min-width:0}
-.selector-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.selector-title h2{margin:0;font-size:20px}
-.club-list{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;overflow:auto;padding-right:3px;min-height:0;flex:1}
-.club-card{position:relative;border:1px solid #ffffff14;background:#ffffff08;border-radius:16px;padding:10px 7px;color:white;min-height:92px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;cursor:pointer}
-.club-card.selected{border-color:#70ff9d;background:#58ff8f18;box-shadow:inset 0 0 0 1px #70ff9d55}
-.club-card img{width:42px;height:42px;object-fit:contain}
-.club-card span{font-size:10px;text-align:center;line-height:1.05}
-.selection-footer{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;margin-top:12px}
-.team-preview{display:flex;align-items:center;gap:10px;min-width:0;background:#ffffff08;border-radius:14px;padding:9px}
-.team-preview img{width:38px;height:38px;object-fit:contain}
-.team-preview strong{font-size:12px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.team-preview small{color:#8fac99}
-.vs{font-weight:1000;color:#75ff9f}
-.primary{border:0;border-radius:14px;background:linear-gradient(145deg,#72ff9d,#17c866);color:#042312;font-weight:900;padding:13px 18px;cursor:pointer;box-shadow:0 10px 25px #2eff7b22}
-#startBtn{grid-column:1/-1}
-#game{background:#0b321c;align-items:stretch}
-#canvas{width:100%;height:100%;display:block;touch-action:none}
-.hud{position:absolute;left:50%;top:calc(var(--safe-t) + 5px);transform:translateX(-50%);display:flex;align-items:center;gap:9px;padding:7px 11px;background:#07110de6;border:1px solid #ffffff22;border-radius:14px;backdrop-filter:blur(12px);z-index:5;box-shadow:0 8px 30px #0008}
+#rotate{display:none;position:fixed;z-index:9999;inset:0;background:#06110b;align-items:center;justify-content:center;text-align:center;padding:30px}
+@media(orientation:portrait){#rotate{display:flex}.screen{display:none!important}}
+.bg{background:radial-gradient(circle at 15% 0,#185438 0,transparent 35%),linear-gradient(145deg,#07140d,#0a2418 55%,#06110b)}
+.top{height:58px;display:flex;align-items:center;justify-content:space-between;padding:var(--safe-t) var(--safe-r) 0 var(--safe-l)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:1000;letter-spacing:.03em}
+.logoMark{width:38px;height:38px;border-radius:12px;background:linear-gradient(145deg,#79ffa6,#16c96b);display:grid;place-items:center;color:#07351c}
+.pill{padding:7px 11px;border-radius:999px;background:#ffffff0e;border:1px solid #ffffff1a;color:#cfe7d8;font-size:12px}
+.primary,.secondary,.danger{border:0;border-radius:13px;padding:12px 16px;font-weight:900}
+.primary{background:linear-gradient(145deg,#73ffa1,#20ce6e);color:#062a17}
+.secondary{background:#ffffff0e;border:1px solid #ffffff20}
+.danger{background:#a72f35}
+#home{flex-direction:column;padding-bottom:var(--safe-b)}
+.homeBody{flex:1;min-height:0;display:grid;grid-template-columns:.9fr 1.35fr;gap:16px;padding:12px var(--safe-r) 0 var(--safe-l)}
+.hero,.panel{border:1px solid #ffffff17;background:#07170fc7;backdrop-filter:blur(18px);border-radius:24px;overflow:hidden}
+.hero{padding:26px;display:flex;flex-direction:column;justify-content:center}
+.hero h1{font-size:clamp(36px,5.5vw,72px);line-height:.88;letter-spacing:-.06em;margin:0 0 14px}
+.hero p{color:#b7cbbf;line-height:1.45;max-width:540px}
+.modeButtons{display:flex;gap:10px;margin-top:22px}
+.modeButtons button{flex:1}
+.clubPanel{padding:16px;display:flex;flex-direction:column;min-height:0}
+.clubGrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;overflow:auto;flex:1;min-height:0}
+.club{border:1px solid #ffffff14;background:#ffffff08;border-radius:15px;padding:8px 5px;display:flex;flex-direction:column;align-items:center;gap:5px;min-height:82px}
+.club.sel{border-color:#70ff9d;background:#56ff8d18}
+.club img{width:39px;height:39px;object-fit:contain}
+.club span{font-size:10px;text-align:center}
+.pickFooter{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+.preview{display:flex;align-items:center;gap:8px;background:#ffffff08;border-radius:13px;padding:8px;min-width:0}
+.preview img{width:34px;height:34px;object-fit:contain}
+.preview strong{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.preview small{font-size:10px;color:#9eb3a6}
+#career{flex-direction:column;padding-bottom:var(--safe-b)}
+.careerBody{flex:1;min-height:0;display:grid;grid-template-columns:220px 1fr;gap:14px;padding:10px var(--safe-r) 0 var(--safe-l)}
+.sidebar{display:flex;flex-direction:column;gap:8px;padding:12px}
+.careerClub{display:flex;align-items:center;gap:10px;padding:10px;background:#ffffff08;border-radius:15px;margin-bottom:4px}
+.careerClub img{width:46px;height:46px;object-fit:contain}
+.navBtn{border:0;text-align:left;background:#ffffff08;border-radius:12px;padding:11px 12px;font-weight:800}
+.navBtn.active{background:#59ff8e22;border:1px solid #6fff9c}
+.content{padding:16px;overflow:auto}
+.dashboard{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.stat{background:#ffffff08;border:1px solid #ffffff12;border-radius:16px;padding:14px}
+.stat b{font-size:24px;display:block;margin-top:7px}
+.cards{display:grid;grid-template-columns:1.3fr 1fr;gap:12px;margin-top:12px}
+.card{background:#ffffff07;border:1px solid #ffffff12;border-radius:17px;padding:14px}
+.card h3{margin:0 0 10px}
+.fixture{display:flex;align-items:center;justify-content:space-between;background:#ffffff07;border-radius:12px;padding:9px;margin:7px 0}
+.fixture img{width:28px;height:28px;object-fit:contain}
+.table{width:100%;border-collapse:collapse;font-size:12px}
+.table th,.table td{padding:8px;border-bottom:1px solid #ffffff10;text-align:left}
+.teamCell{display:flex;align-items:center;gap:8px}
+.teamCell img{width:23px;height:23px;object-fit:contain}
+.squadGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.playerRow{background:#ffffff07;border:1px solid #ffffff10;border-radius:13px;padding:10px;display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:8px}
+.number{width:31px;height:31px;border-radius:50%;display:grid;place-items:center;font-weight:900}
+#game{background:#0c5b30}
+#pitch{width:100%;height:100%;display:block;touch-action:none}
+.hud{position:absolute;left:50%;top:calc(var(--safe-t) + 5px);transform:translateX(-50%);z-index:5;background:#06110de8;border:1px solid #ffffff22;border-radius:14px;padding:7px 11px;display:flex;align-items:center;gap:8px}
 .hud img{width:27px;height:27px;object-fit:contain}
-.score{font-weight:1000;font-size:18px;min-width:50px;text-align:center}
-.clock{font-size:11px;color:#b7cbbf;text-align:center}
-.abbr{font-size:11px;font-weight:900;width:30px;text-align:center}
-.pause{position:absolute;left:var(--safe-l);top:calc(var(--safe-t) + 8px);z-index:7;width:42px;height:42px;border-radius:13px;border:1px solid #ffffff22;background:#07110dcc;color:white;font-size:18px}
-.joy-base{position:absolute;width:120px;height:120px;border-radius:50%;background:#ffffff0d;border:2px solid #ffffff18;display:none;z-index:4;pointer-events:none}
-.joy-knob{position:absolute;width:54px;height:54px;border-radius:50%;left:31px;top:31px;background:#ffffff33;border:2px solid #ffffff55;box-shadow:0 5px 20px #0008}
-.actions{position:absolute;right:var(--safe-r);bottom:calc(var(--safe-b) + 9px);width:220px;height:165px;z-index:6}
-.action{position:absolute;width:68px;height:68px;border-radius:50%;border:1px solid #ffffff33;background:#07110dbd;color:#fff;font-weight:900;font-size:11px;box-shadow:0 8px 20px #0006;backdrop-filter:blur(8px)}
-.action:active{transform:scale(.92);background:#ffffff35}
-#shoot{right:10px;top:0;background:#cf3c3cd1}
-#pass{left:65px;top:42px;background:#207acbd1}
-#sprint{right:5px;bottom:0;background:#d08c20d1}
-#switch{left:0;bottom:0;background:#575f65d1}
-.event{position:absolute;left:50%;bottom:calc(var(--safe-b) + 12px);transform:translateX(-50%);z-index:8;background:#07110de8;border:1px solid #ffffff22;border-radius:13px;padding:10px 16px;font-weight:850;opacity:0;transition:.25s;pointer-events:none}
-.event.show{opacity:1;bottom:calc(var(--safe-b) + 27px)}
-#pauseOverlay,#resultOverlay{position:absolute;inset:0;display:none;z-index:20;background:#031009dc;backdrop-filter:blur(16px);align-items:center;justify-content:center}
-.overlay-card{width:min(520px,80vw);background:#0a1c13;border:1px solid #ffffff22;border-radius:24px;padding:24px;text-align:center}
-.overlay-card h2{font-size:34px;margin:0 0 8px}
-.overlay-card p{color:#b8c9be}
-.overlay-actions{display:flex;justify-content:center;gap:10px;margin-top:18px}
-.secondary{border:1px solid #ffffff26;background:#ffffff0e;color:white;border-radius:13px;padding:12px 16px;font-weight:800}
-@media(max-height:520px){
-.topbar{height:45px}.brand{font-size:17px}.brand-mark{width:32px;height:32px}.hero{padding:18px}.hero h1{font-size:40px}.club-card{min-height:73px}.club-card img{width:32px;height:32px}.selector{padding:12px}.selection-footer{margin-top:8px}
-}
+.hudScore{font-weight:1000;font-size:18px;text-align:center;min-width:55px}
+.hudClock{text-align:center;color:#b4c9bc;font-size:10px}
+.pause{position:absolute;left:var(--safe-l);top:calc(var(--safe-t) + 8px);z-index:8;width:42px;height:42px;border-radius:13px;border:1px solid #ffffff20;background:#06110dcc}
+.joy{position:absolute;width:118px;height:118px;border-radius:50%;background:#ffffff0d;border:2px solid #ffffff18;display:none;pointer-events:none;z-index:6}
+.knob{position:absolute;width:52px;height:52px;border-radius:50%;left:31px;top:31px;background:#ffffff35;border:2px solid #ffffff50}
+.actions{position:absolute;right:var(--safe-r);bottom:calc(var(--safe-b) + 8px);width:225px;height:170px;z-index:7}
+.act{position:absolute;width:68px;height:68px;border-radius:50%;border:1px solid #ffffff38;font-weight:900;font-size:11px;background:#07110dcc}
+#pass{left:65px;top:43px;background:#247acddd}#shoot{right:7px;top:0;background:#c83f46dd}#sprint{right:2px;bottom:0;background:#cf8a24dd}#switch{left:0;bottom:0;background:#59636ddd}
+.toast{position:absolute;left:50%;bottom:25px;transform:translateX(-50%);z-index:15;background:#06110de8;border:1px solid #ffffff22;border-radius:13px;padding:10px 15px;opacity:0;transition:.2s}
+.toast.show{opacity:1;bottom:38px}
+.overlay{position:absolute;inset:0;display:none;z-index:30;background:#031009dd;backdrop-filter:blur(15px);align-items:center;justify-content:center}
+.modal{width:min(520px,82vw);background:#0a1d14;border:1px solid #ffffff22;border-radius:22px;padding:22px;text-align:center}
+.modal h2{font-size:32px;margin:0 0 7px}
+.row{display:flex;gap:9px;justify-content:center;margin-top:16px}
+@media(max-height:520px){.top{height:46px}.hero{padding:18px}.hero h1{font-size:42px}.club{min-height:68px}.club img{width:30px;height:30px}.careerBody{grid-template-columns:185px 1fr}.navBtn{padding:8px 10px}.content{padding:11px}}
 </style>
 </head>
 <body>
-<div id="rotate"><div><div class="phone">📱</div><h2>Поверните iPhone горизонтально</h2><p>Матч и интерфейс созданы для альбомного режима.</p></div></div>
+<div id="rotate"><div><div style="font-size:58px">📱↻</div><h2>Поверните iPhone горизонтально</h2></div></div>
 
-<section id="menu" class="screen active">
-  <div class="topbar">
-    <div class="brand"><div class="brand-mark">⚽</div>РПЛ FOOTBALL 2026</div>
-    <div class="pill">Мобильный прототип • 5 × 5</div>
+<section id="home" class="screen active bg">
+ <div class="top"><div class="brand"><div class="logoMark">⚽</div>РПЛ FOOTBALL CAREER 2026</div><div class="pill">Версия 0.2</div></div>
+ <div class="homeBody">
+  <div class="hero panel">
+   <h1>ИГРАЙ.<br>РАЗВИВАЙ.<br>ПОБЕЖДАЙ.</h1>
+   <p>Исправленное управление, адресные передачи, ручная смена футболиста и командный ИИ. Начни карьеру или сыграй быстрый матч.</p>
+   <div class="modeButtons">
+    <button id="careerStart" class="primary">НАЧАТЬ КАРЬЕРУ</button>
+    <button id="quickStart" class="secondary">БЫСТРЫЙ МАТЧ</button>
+   </div>
   </div>
-  <div class="menu-grid">
-    <div class="hero">
-      <h1>ТВОЙ КЛУБ.<br>ТВОЯ ИГРА.</h1>
-      <p>Выбери команду РПЛ, выйди на поле и управляй футболистами прямо с iPhone. Игроки показаны кругами с номерами и цветами домашней или гостевой формы.</p>
-      <div class="features">
-        <div class="feature">Горизонтальный экран</div><div class="feature">Сенсорный джойстик</div>
-        <div class="feature">Пас и удар</div><div class="feature">ИИ соперника</div>
-        <div class="feature">Настоящие эмблемы</div><div class="feature">90 минут за 4 минуты</div>
-      </div>
-    </div>
-    <div class="selector">
-      <div class="selector-title"><h2>Выбор команд</h2><span class="pill" id="pickHint">Выберите хозяев</span></div>
-      <div id="clubList" class="club-list"></div>
-      <div class="selection-footer">
-        <div class="team-preview"><img id="homeLogo"><div><strong id="homeName">Не выбрано</strong><small>Хозяева • домашняя</small></div></div>
-        <div class="vs">VS</div>
-        <div class="team-preview"><img id="awayLogo"><div><strong id="awayName">Не выбрано</strong><small>Гости • гостевая</small></div></div>
-        <button id="startBtn" class="primary" disabled>НАЧАТЬ МАТЧ</button>
-      </div>
-    </div>
+  <div class="clubPanel panel">
+   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b>Выбор клуба</b><span id="pickHint" class="pill">Выберите свой клуб</span></div>
+   <div id="clubGrid" class="clubGrid"></div>
+   <div class="pickFooter">
+    <div class="preview"><img id="homeLogo"><div><strong id="homeName">Не выбрано</strong><small>Ваш клуб</small></div></div>
+    <div class="preview"><img id="awayLogo"><div><strong id="awayName">Соперник автоматически</strong><small>Быстрый матч</small></div></div>
+   </div>
   </div>
+ </div>
+</section>
+
+<section id="career" class="screen bg">
+ <div class="top"><div class="brand">КАРЬЕРА ТРЕНЕРА</div><button id="careerBack" class="secondary">Главное меню</button></div>
+ <div class="careerBody">
+  <aside class="sidebar panel">
+   <div class="careerClub"><img id="careerLogo"><div><b id="careerName"></b><small style="display:block;color:#9fb2a6">Сезон 2026/27</small></div></div>
+   <button class="navBtn active" data-tab="overview">Обзор</button>
+   <button class="navBtn" data-tab="calendar">Календарь</button>
+   <button class="navBtn" data-tab="table">Таблица РПЛ</button>
+   <button class="navBtn" data-tab="squad">Состав</button>
+   <button class="navBtn" data-tab="tactics">Тактика</button>
+   <button class="navBtn" data-tab="save">Сохранение</button>
+  </aside>
+  <main id="careerContent" class="content panel"></main>
+ </div>
 </section>
 
 <section id="game" class="screen">
-  <canvas id="canvas"></canvas>
-  <button class="pause" id="pauseBtn">Ⅱ</button>
-  <div class="hud">
-    <img id="hudHomeLogo"><span id="hudHome" class="abbr">ЗЕН</span>
-    <div><div class="score" id="score">0 : 0</div><div class="clock" id="clock">00:00</div></div>
-    <span id="hudAway" class="abbr">СПА</span><img id="hudAwayLogo">
-  </div>
-  <div id="joystick" class="joy-base"><div id="joyKnob" class="joy-knob"></div></div>
-  <div class="actions">
-    <button class="action" id="shoot">УДАР</button>
-    <button class="action" id="pass">ПАС</button>
-    <button class="action" id="sprint">РЫВОК</button>
-    <button class="action" id="switch">СМЕНА</button>
-  </div>
-  <div id="event" class="event"></div>
-  <div id="pauseOverlay"><div class="overlay-card"><h2>Пауза</h2><p>Матч остановлен</p><div class="overlay-actions"><button class="primary" id="resumeBtn">Продолжить</button><button class="secondary" id="quitBtn">В меню</button></div></div></div>
-  <div id="resultOverlay"><div class="overlay-card"><h2 id="resultTitle">Матч окончен</h2><p id="resultScore"></p><div class="overlay-actions"><button class="primary" id="rematchBtn">Реванш</button><button class="secondary" id="resultMenuBtn">В меню</button></div></div></div>
+ <canvas id="pitch"></canvas>
+ <button id="pauseBtn" class="pause">Ⅱ</button>
+ <div class="hud"><img id="hudHLogo"><b id="hudH">ЗЕН</b><div><div id="score" class="hudScore">0 : 0</div><div id="clock" class="hudClock">00:00</div></div><b id="hudA">СПА</b><img id="hudALogo"></div>
+ <div id="joy" class="joy"><div id="knob" class="knob"></div></div>
+ <div class="actions"><button id="shoot" class="act">УДАР</button><button id="pass" class="act">ПАС</button><button id="sprint" class="act">РЫВОК</button><button id="switch" class="act">СМЕНА</button></div>
+ <div id="toast" class="toast"></div>
+ <div id="pauseOverlay" class="overlay"><div class="modal"><h2>Пауза</h2><p>Матч остановлен</p><div class="row"><button id="resume" class="primary">Продолжить</button><button id="quit" class="secondary">В карьеру</button></div></div></div>
+ <div id="resultOverlay" class="overlay"><div class="modal"><h2 id="resultTitle"></h2><p id="resultText"></p><div class="row"><button id="continueCareer" class="primary">Продолжить карьеру</button><button id="resultHome" class="secondary">Главное меню</button></div></div></div>
 </section>
 
 <script>
 const CLUBS=[
-{id:"zenit",name:"Зенит",abbr:"ЗЕН",home:"#1787d4",away:"#f7fbff",homeText:"#fff",awayText:"#1476bd",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/FC_Zenit_1_star_2015_logo.svg/240px-FC_Zenit_1_star_2015_logo.svg.png",players:["Адамов","Дркушич","Вендел","Глушенков","Соболев","Мостовой","Кассьерра"]},
-{id:"spartak",name:"Спартак Москва",abbr:"СПА",home:"#d3222a",away:"#fff",homeText:"#fff",awayText:"#d3222a",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/FC_Spartak_Moscow_2022_logo.svg/240px-FC_Spartak_Moscow_2022_logo.svg.png",players:["Максименко","Литвинов","Зобнин","Барко","Угальде","Бонгонда","Денисов"]},
-{id:"cska",name:"ЦСКА",abbr:"ЦСК",home:"#17478b",away:"#fff",homeText:"#fff",awayText:"#17478b",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/PFC_CSKA_Moscow_logo.svg/240px-PFC_CSKA_Moscow_logo.svg.png",players:["Акинфеев","Дивеев","Обляков","Кисляк","Мусаев","Круговой","Глебов"]},
-{id:"krasnodar",name:"Краснодар",abbr:"КРА",home:"#16763a",away:"#f4f4f4",homeText:"#fff",awayText:"#111",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/FC_Krasnodar_logo.svg/240px-FC_Krasnodar_logo.svg.png",players:["Агкацев","Тормена","Ленини","Сперцян","Кордуоба","Батчи","Кривцов"]},
-{id:"lokomotiv",name:"Локомотив",abbr:"ЛОК",home:"#11834c",away:"#fff",homeText:"#fff",awayText:"#d11d2b",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/FC_Lokomotiv_Moscow_logo.svg/240px-FC_Lokomotiv_Moscow_logo.svg.png",players:["Лантратов","Ненахов","Баринов","Батраков","Воробьёв","Раков","Пиняев"]},
-{id:"dynamo",name:"Динамо Москва",abbr:"ДИН",home:"#1c58a3",away:"#fff",homeText:"#fff",awayText:"#1c58a3",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/FC_Dynamo_Moscow_logo.svg/240px-FC_Dynamo_Moscow_logo.svg.png",players:["Лещук","Маричаль","Фомин","Карраскаль","Тюкавин","Гладышев","Кутицкий"]},
-{id:"rostov",name:"Ростов",abbr:"РОС",home:"#f3d31b",away:"#16479c",homeText:"#16479c",awayText:"#fff",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/FC_Rostov_logo.svg/240px-FC_Rostov_logo.svg.png",players:["Ятимов","Осипенко","Глебов","Щетинин","Комличенко","Мохеби","Роналдо"]},
-{id:"rubin",name:"Рубин",abbr:"РУБ",home:"#8c1730",away:"#fff",homeText:"#fff",awayText:"#8c1730",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/FC_Rubin_Kazan_logo.svg/240px-FC_Rubin_Kazan_logo.svg.png",players:["Ставер","Вуячич","Иву","Даку","Шабанхаджай","Кузяев","Рожков"]},
-{id:"akhmat",name:"Ахмат",abbr:"АХМ",home:"#16864b",away:"#fff",homeText:"#fff",awayText:"#16864b",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/FC_Akhmat_Grozny_logo.svg/240px-FC_Akhmat_Grozny_logo.svg.png",players:["Шелия","Семенов","Уткин","Садулаев","Конате","Тодорович","Ильин"]},
-{id:"krylya",name:"Крылья Советов",abbr:"КС",home:"#5eb8e8",away:"#fff",homeText:"#092f5a",awayText:"#237bb2",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/FC_Krylia_Sovetov_Samara_logo.svg/240px-FC_Krylia_Sovetov_Samara_logo.svg.png",players:["Песьяков","Солдатенков","Бабкин","Гарре","Рахманович","Сергеев","Ороз"]},
-{id:"baltika",name:"Балтика",abbr:"БАЛ",home:"#163b76",away:"#fff",homeText:"#fff",awayText:"#163b76",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/FC_Baltika_Kaliningrad_logo.svg/240px-FC_Baltika_Kaliningrad_logo.svg.png",players:["Бориско","Осипов","Титков","Петров","Хиль","Лазарев","Кузьмин"]},
-{id:"akron",name:"Акрон",abbr:"АКР",home:"#cf202b",away:"#fff",homeText:"#fff",awayText:"#cf202b",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/FC_Akron_Tolyatti_logo.svg/240px-FC_Akron_Tolyatti_logo.svg.png",players:["Волков","Бокоев","Дмитриев","Дзюба","Пестряков","Бакайоко","Хубулов"]},
-{id:"orenburg",name:"Оренбург",abbr:"ОРЕ",home:"#2464aa",away:"#fff",homeText:"#fff",awayText:"#2464aa",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/FC_Orenburg_logo.svg/240px-FC_Orenburg_logo.svg.png",players:["Сысуев","Хотулёв","Прохин","Михайлов","Томпсон","Квеквескири","Гюрлюк"]},
-{id:"dinamo-m",name:"Динамо Махачкала",abbr:"ДМХ",home:"#21559a",away:"#fff",homeText:"#fff",awayText:"#21559a",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/FC_Dynamo_Makhachkala_logo.svg/240px-FC_Dynamo_Makhachkala_logo.svg.png",players:["Волк","Шумахов","Касинтура","Пальцев","Агаларов","Мрезиг","Сундуков"]},
-{id:"fakel",name:"Факел",abbr:"ФАК",home:"#234d91",away:"#fff",homeText:"#fff",awayText:"#234d91",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/FC_Fakel_Voronezh_logo.svg/240px-FC_Fakel_Voronezh_logo.svg.png",players:["Гудиев","Брызгалов","Моцпан","Ильин","Мертенс","Якимов","Квеквескири"]},
-{id:"rodina",name:"Родина",abbr:"РОД",home:"#1b3265",away:"#fff",homeText:"#fff",awayText:"#1b3265",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/FC_Rodina_Moscow_logo.svg/240px-FC_Rodina_Moscow_logo.svg.png",players:["Коченков","Сокол","Калинин","Тимошенко","Горбунов","Куликов","Шавло"]}
+{id:"zenit",name:"Зенит",abbr:"ЗЕН",home:"#1787d4",away:"#f7fbff",ht:"#fff",at:"#1476bd",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/FC_Zenit_1_star_2015_logo.svg/240px-FC_Zenit_1_star_2015_logo.svg.png",rating:84,players:["Адамов","Дркушич","Вендел","Глушенков","Соболев","Мостовой","Кассьерра"]},
+{id:"spartak",name:"Спартак Москва",abbr:"СПА",home:"#d3222a",away:"#fff",ht:"#fff",at:"#d3222a",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/FC_Spartak_Moscow_2022_logo.svg/240px-FC_Spartak_Moscow_2022_logo.svg.png",rating:81,players:["Максименко","Литвинов","Зобнин","Барко","Угальде","Бонгонда","Денисов"]},
+{id:"cska",name:"ЦСКА",abbr:"ЦСК",home:"#17478b",away:"#fff",ht:"#fff",at:"#17478b",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/PFC_CSKA_Moscow_logo.svg/240px-PFC_CSKA_Moscow_logo.svg.png",rating:82,players:["Акинфеев","Дивеев","Обляков","Кисляк","Мусаев","Круговой","Глебов"]},
+{id:"krasnodar",name:"Краснодар",abbr:"КРА",home:"#16763a",away:"#f4f4f4",ht:"#fff",at:"#111",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/FC_Krasnodar_logo.svg/240px-FC_Krasnodar_logo.svg.png",rating:84,players:["Агкацев","Тормена","Ленини","Сперцян","Кордуоба","Батчи","Кривцов"]},
+{id:"lokomotiv",name:"Локомотив",abbr:"ЛОК",home:"#11834c",away:"#fff",ht:"#fff",at:"#d11d2b",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/9/95/FC_Lokomotiv_Moscow_logo.svg/240px-FC_Lokomotiv_Moscow_logo.svg.png",rating:80,players:["Лантратов","Ненахов","Баринов","Батраков","Воробьёв","Раков","Пиняев"]},
+{id:"dynamo",name:"Динамо Москва",abbr:"ДИН",home:"#1c58a3",away:"#fff",ht:"#fff",at:"#1c58a3",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/FC_Dynamo_Moscow_logo.svg/240px-FC_Dynamo_Moscow_logo.svg.png",rating:81,players:["Лещук","Маричаль","Фомин","Карраскаль","Тюкавин","Гладышев","Кутицкий"]},
+{id:"rostov",name:"Ростов",abbr:"РОС",home:"#f3d31b",away:"#16479c",ht:"#16479c",at:"#fff",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/FC_Rostov_logo.svg/240px-FC_Rostov_logo.svg.png",rating:76,players:["Ятимов","Осипенко","Глебов","Щетинин","Комличенко","Мохеби","Роналдо"]},
+{id:"rubin",name:"Рубин",abbr:"РУБ",home:"#8c1730",away:"#fff",ht:"#fff",at:"#8c1730",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/FC_Rubin_Kazan_logo.svg/240px-FC_Rubin_Kazan_logo.svg.png",rating:76,players:["Ставер","Вуячич","Иву","Даку","Шабанхаджай","Кузяев","Рожков"]},
+{id:"akhmat",name:"Ахмат",abbr:"АХМ",home:"#16864b",away:"#fff",ht:"#fff",at:"#16864b",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/FC_Akhmat_Grozny_logo.svg/240px-FC_Akhmat_Grozny_logo.svg.png",rating:74,players:["Шелия","Семенов","Уткин","Садулаев","Конате","Тодорович","Ильин"]},
+{id:"krylya",name:"Крылья Советов",abbr:"КС",home:"#5eb8e8",away:"#fff",ht:"#092f5a",at:"#237bb2",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/e/e7/FC_Krylia_Sovetov_Samara_logo.svg/240px-FC_Krylia_Sovetov_Samara_logo.svg.png",rating:74,players:["Песьяков","Солдатенков","Бабкин","Гарре","Рахманович","Сергеев","Ороз"]},
+{id:"baltika",name:"Балтика",abbr:"БАЛ",home:"#163b76",away:"#fff",ht:"#fff",at:"#163b76",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/7/70/FC_Baltika_Kaliningrad_logo.svg/240px-FC_Baltika_Kaliningrad_logo.svg.png",rating:72,players:["Бориско","Осипов","Титков","Петров","Хиль","Лазарев","Кузьмин"]},
+{id:"akron",name:"Акрон",abbr:"АКР",home:"#cf202b",away:"#fff",ht:"#fff",at:"#cf202b",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/8/82/FC_Akron_Tolyatti_logo.svg/240px-FC_Akron_Tolyatti_logo.svg.png",rating:73,players:["Волков","Бокоев","Дмитриев","Дзюба","Пестряков","Бакайоко","Хубулов"]},
+{id:"orenburg",name:"Оренбург",abbr:"ОРЕ",home:"#2464aa",away:"#fff",ht:"#fff",at:"#2464aa",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a6/FC_Orenburg_logo.svg/240px-FC_Orenburg_logo.svg.png",rating:71,players:["Сысуев","Хотулёв","Прохин","Михайлов","Томпсон","Квеквескири","Гюрлюк"]},
+{id:"dinamo-m",name:"Динамо Махачкала",abbr:"ДМХ",home:"#21559a",away:"#fff",ht:"#fff",at:"#21559a",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/FC_Dynamo_Makhachkala_logo.svg/240px-FC_Dynamo_Makhachkala_logo.svg.png",rating:72,players:["Волк","Шумахов","Касинтура","Пальцев","Агаларов","Мрезиг","Сундуков"]},
+{id:"fakel",name:"Факел",abbr:"ФАК",home:"#234d91",away:"#fff",ht:"#fff",at:"#234d91",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/4/44/FC_Fakel_Voronezh_logo.svg/240px-FC_Fakel_Voronezh_logo.svg.png",rating:71,players:["Гудиев","Брызгалов","Моцпан","Ильин","Мертенс","Якимов","Квеквескири"]},
+{id:"rodina",name:"Родина",abbr:"РОД",home:"#1b3265",away:"#fff",ht:"#fff",at:"#1b3265",logo:"https://upload.wikimedia.org/wikipedia/commons/thumb/5/5f/FC_Rodina_Moscow_logo.svg/240px-FC_Rodina_Moscow_logo.svg.png",rating:70,players:["Коченков","Сокол","Калинин","Тимошенко","Горбунов","Куликов","Шавло"]}
 ];
-const $=s=>document.querySelector(s);
-const menu=$("#menu"), game=$("#game"), clubList=$("#clubList");
-let home=null,away=null,pick="home";
-function safeLogo(img,club){img.src=club.logo;img.onerror=()=>{img.onerror=null;img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" rx="24" fill="${club.home}"/><text x="50" y="59" text-anchor="middle" fill="white" font-family="Arial" font-size="28" font-weight="bold">${club.abbr}</text></svg>`)}}
-CLUBS.forEach(c=>{
- const b=document.createElement("button");b.className="club-card";b.dataset.id=c.id;
- b.innerHTML=`<img alt=""><span>${c.name}</span>`;
- safeLogo(b.querySelector("img"),c);
- b.onclick=()=>pickClub(c);
- clubList.appendChild(b);
-});
-function pickClub(c){
- if(pick==="home"){home=c;pick="away";$("#pickHint").textContent="Выберите гостей"}
- else if(!home||c.id!==home.id){away=c;pick="home";$("#pickHint").textContent="Можно изменить хозяев"}
- document.querySelectorAll(".club-card").forEach(x=>x.classList.toggle("selected",[home?.id,away?.id].includes(x.dataset.id)));
- updatePreview();
+const $=s=>document.querySelector(s), screens=[...document.querySelectorAll(".screen")];
+const show=id=>{screens.forEach(s=>s.classList.toggle("active",s.id===id))};
+function logo(img,c){img.src=c.logo;img.onerror=()=>{img.onerror=null;img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" rx="25" fill="${c.home}"/><text x="50" y="60" text-anchor="middle" fill="white" font-size="26" font-family="Arial" font-weight="bold">${c.abbr}</text></svg>`)}}
+let selected=null,quickOpponent=null,career=null,currentMode="career";
+const grid=$("#clubGrid");
+CLUBS.forEach(c=>{let b=document.createElement("button");b.className="club";b.innerHTML="<img><span>"+c.name+"</span>";logo(b.querySelector("img"),c);b.onclick=()=>selectClub(c,b);grid.appendChild(b)});
+function selectClub(c,b){selected=c;document.querySelectorAll(".club").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");logo($("#homeLogo"),c);$("#homeName").textContent=c.name;quickOpponent=CLUBS.find(x=>x.id!==c.id&&Math.abs(x.rating-c.rating)<=3)||CLUBS.find(x=>x.id!==c.id);logo($("#awayLogo"),quickOpponent);$("#awayName").textContent=quickOpponent.name;$("#pickHint").textContent="Клуб выбран"}
+$("#careerStart").onclick=()=>{if(!selected)return toastHome("Сначала выберите клуб");startCareer(selected)};
+$("#quickStart").onclick=()=>{if(!selected)return toastHome("Сначала выберите клуб");currentMode="quick";startMatch(selected,quickOpponent)};
+function toastHome(t){$("#pickHint").textContent=t;setTimeout(()=>{$("#pickHint").textContent=selected?"Клуб выбран":"Выберите свой клуб"},1400)}
+function freshCareer(club){
+ const teams=CLUBS.map(c=>({id:c.id,p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}));
+ const opponents=CLUBS.filter(c=>c.id!==club.id);
+ const fixtures=opponents.slice(0,10).map((o,i)=>({round:i+1,home:i%2===0?club.id:o.id,away:i%2===0?o.id:club.id,played:false,score:null}));
+ return {clubId:club.id,round:1,budget:45000000,morale:78,confidence:72,teams,fixtures,lastResult:null}
 }
-function updatePreview(){
- if(home){safeLogo($("#homeLogo"),home);$("#homeName").textContent=home.name}
- if(away){safeLogo($("#awayLogo"),away);$("#awayName").textContent=away.name}
- $("#startBtn").disabled=!(home&&away&&home.id!==away.id)
+function startCareer(club){
+ currentMode="career";career=freshCareer(club);saveCareer();openCareer()
 }
-$("#startBtn").onclick=()=>startMatch();
-$("#pauseBtn").onclick=()=>togglePause(true);
-$("#resumeBtn").onclick=()=>togglePause(false);
-$("#quitBtn").onclick=$("#resultMenuBtn").onclick=()=>toMenu();
-$("#rematchBtn").onclick=()=>startMatch();
-
-const canvas=$("#canvas"),ctx=canvas.getContext("2d");
-let W=0,H=0,DPR=1,paused=false,ended=false,last=0,elapsed=0,score=[0,0],players=[],ball={},controlled=0;
-let joystick={active:false,id:null,cx:0,cy:0,x:0,y:0},sprinting=false;
-const MATCH_SECONDS=240;
+function openCareer(){
+ let c=CLUBS.find(x=>x.id===career.clubId);logo($("#careerLogo"),c);$("#careerName").textContent=c.name;show("career");renderTab("overview")
+}
+$("#careerBack").onclick=()=>show("home");
+document.querySelectorAll(".navBtn").forEach(b=>b.onclick=()=>{document.querySelectorAll(".navBtn").forEach(x=>x.classList.toggle("active",x===b));renderTab(b.dataset.tab)});
+function renderTab(tab){
+ const c=CLUBS.find(x=>x.id===career.clubId),fx=career.fixtures.find(f=>!f.played);
+ const content=$("#careerContent");
+ if(tab==="overview"){
+  const opp=fx?CLUBS.find(x=>x.id===(fx.home===c.id?fx.away:fx.home)):null;
+  content.innerHTML=`<h2 style="margin-top:0">Обзор клуба</h2>
+  <div class="dashboard"><div class="stat">Тур<b>${career.round}</b></div><div class="stat">Бюджет<b>${Math.round(career.budget/1e6)} млн ₽</b></div><div class="stat">Мораль<b>${career.morale}%</b></div><div class="stat">Доверие<b>${career.confidence}%</b></div></div>
+  <div class="cards"><div class="card"><h3>Следующий матч</h3>${opp?`<div class="fixture"><span>${c.name}</span><b>VS</b><span>${opp.name}</span></div><button id="playCareerMatch" class="primary">СЫГРАТЬ МАТЧ</button>`:"<p>Календарь завершён.</p>"}</div>
+  <div class="card"><h3>Последний результат</h3><p>${career.lastResult||"Сезон только начинается."}</p><p style="color:#9fb2a6">Матчи других клубов симулируются после вашего матча.</p></div></div>`;
+  $("#playCareerMatch")?.addEventListener("click",()=>{let oppId=fx.home===c.id?fx.away:fx.home;startMatch(c,CLUBS.find(x=>x.id===oppId),fx.home===c.id)});
+ }else if(tab==="calendar"){
+  content.innerHTML=`<h2 style="margin-top:0">Календарь</h2>${career.fixtures.map(f=>{let h=CLUBS.find(x=>x.id===f.home),a=CLUBS.find(x=>x.id===f.away);return `<div class="fixture"><span>Тур ${f.round}</span><span>${h.name} — ${a.name}</span><b>${f.played?f.score:"не сыгран"}</b></div>`}).join("")}`;
+ }else if(tab==="table"){
+  let rows=[...career.teams].sort((a,b)=>b.pts-a.pts||((b.gf-b.ga)-(a.gf-a.ga))||b.gf-a.gf);
+  content.innerHTML=`<h2 style="margin-top:0">Таблица РПЛ</h2><table class="table"><thead><tr><th>#</th><th>Клуб</th><th>И</th><th>В</th><th>Н</th><th>П</th><th>М</th><th>О</th></tr></thead><tbody>${rows.map((r,i)=>{let c=CLUBS.find(x=>x.id===r.id);return `<tr><td>${i+1}</td><td><div class="teamCell"><img src="${c.logo}">${c.name}</div></td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gf}:${r.ga}</td><td><b>${r.pts}</b></td></tr>`}).join("")}</tbody></table>`;
+ }else if(tab==="squad"){
+  content.innerHTML=`<h2 style="margin-top:0">Состав</h2><div class="squadGrid">${c.players.map((p,i)=>`<div class="playerRow"><div class="number" style="background:${c.home};color:${c.ht}">${[1,4,6,10,9,11,7][i]}</div><div><b>${p}</b><small style="display:block;color:#9fb2a6">${["Вратарь","Защитник","Полузащитник","Плеймейкер","Нападающий","Вингер","Нападающий"][i]}</small></div><b>${Math.max(68,c.rating-i%3)}</b></div>`).join("")}</div>`;
+ }else if(tab==="tactics"){
+  content.innerHTML=`<h2 style="margin-top:0">Тактика</h2><div class="card"><h3>Схема 1–2–1</h3><p>Вратарь, два универсальных игрока, плеймейкер и нападающий.</p><p>Команда в матче теперь двигается блоком: защитники поддерживают дистанцию, полузащитник открывается под пас, нападающий растягивает оборону.</p></div>`;
+ }else{
+  content.innerHTML=`<h2 style="margin-top:0">Сохранение</h2><div class="card"><p>Карьера автоматически хранится в памяти браузера на iPhone.</p><button id="manualSave" class="primary">СОХРАНИТЬ</button> <button id="loadSave" class="secondary">ЗАГРУЗИТЬ</button></div>`;
+  $("#manualSave").onclick=()=>{saveCareer();alert("Карьера сохранена")};$("#loadSave").onclick=()=>{let s=localStorage.getItem("rplCareerV2");if(s){career=JSON.parse(s);openCareer()}}
+ }
+}
+function saveCareer(){localStorage.setItem("rplCareerV2",JSON.stringify(career))}
+const canvas=$("#pitch"),ctx=canvas.getContext("2d");let W,H,DPR=1;
+let homeTeam,awayTeam,homeIsCareer=true,players=[],ball,controlled=3,score=[0,0],elapsed=0,last=0,paused=false,ended=false;
+let joy={active:false,id:null,cx:0,cy:0,x:0,y:0},sprinting=false;const MATCH_TIME=210;
 function resize(){DPR=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;canvas.width=W*DPR;canvas.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0)}
 addEventListener("resize",resize);resize();
-function makeTeam(team,side){
- const left=side===0;
- const xs=left?[.13,.27,.27,.40,.43]:[.87,.73,.73,.60,.57];
- const ys=[.50,.30,.70,.40,.62];
- return xs.map((x,i)=>({team:side,x:W*x,y:H*ys[i],vx:0,vy:0,r:15,num:[1,4,6,10,9][i],name:team.players[i]||"Игрок",speed:i===0?90:105+(i%2)*8,hasBall:false}));
+function formation(team,side){
+ const left=side===0,xs=left?[.12,.25,.30,.43,.48]:[.88,.75,.70,.57,.52],ys=[.5,.33,.67,.48,.62];
+ return xs.map((x,i)=>({team:side,role:i,x:W*x,y:H*ys[i],homeX:W*x,homeY:H*ys[i],vx:0,vy:0,r:15,num:[1,4,6,10,9][i],name:team.players[i],speed:[88,104,103,111,109][i],hasBall:false,target:null}));
 }
-function resetKickoff(conceded=null){
- players=[...makeTeam(home,0),...makeTeam(away,1)];
- ball={x:W/2,y:H/2,vx:0,vy:0,r:6,owner:null,lastTeam:conceded===null?0:conceded};
- controlled=conceded===1?5:3;
- if(conceded!==null){let idx=conceded?8:3;ball.owner=idx;players[idx].hasBall=true;ball.x=players[idx].x+(conceded?-18:18);ball.y=players[idx].y}
+function kickoff(conceded=0){
+ players=[...formation(homeTeam,0),...formation(awayTeam,1)];ball={x:W/2,y:H/2,vx:0,vy:0,r:6,owner:null,lastTeam:conceded};controlled=conceded===0?3:nearest(0);
+ let idx=conceded===0?3:8;claim(idx)
 }
-function startMatch(){
- menu.classList.remove("active");game.classList.add("active");
- safeLogo($("#hudHomeLogo"),home);safeLogo($("#hudAwayLogo"),away);
- $("#hudHome").textContent=home.abbr;$("#hudAway").textContent=away.abbr;
- score=[0,0];elapsed=0;paused=false;ended=false;$("#score").textContent="0 : 0";$("#pauseOverlay").style.display="none";$("#resultOverlay").style.display="none";
- resize();resetKickoff();last=performance.now();requestAnimationFrame(loop)
+function startMatch(h,a,isHome=true){
+ homeTeam=isHome?h:a;awayTeam=isHome?a:h;homeIsCareer=isHome;show("game");logo($("#hudHLogo"),homeTeam);logo($("#hudALogo"),awayTeam);$("#hudH").textContent=homeTeam.abbr;$("#hudA").textContent=awayTeam.abbr;
+ score=[0,0];elapsed=0;paused=false;ended=false;$("#score").textContent="0 : 0";$("#pauseOverlay").style.display="none";$("#resultOverlay").style.display="none";resize();kickoff(0);last=performance.now();requestAnimationFrame(loop)
 }
-function toMenu(){paused=true;ended=true;game.classList.remove("active");menu.classList.add("active");$("#pauseOverlay").style.display="none";$("#resultOverlay").style.display="none"}
-function togglePause(v){if(ended)return;paused=v;$("#pauseOverlay").style.display=v?"flex":"none";if(!v){last=performance.now();requestAnimationFrame(loop)}}
-function eventMsg(t){const e=$("#event");e.textContent=t;e.classList.add("show");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("show"),1700)}
-function finish(){ended=true;$("#resultOverlay").style.display="flex";$("#resultTitle").textContent=score[0]===score[1]?"Ничья":(score[0]>score[1]?home.name:away.name)+" побеждает";$("#resultScore").textContent=`${home.name} ${score[0]} : ${score[1]} ${away.name}`}
-function loop(t){
- if(paused||ended)return;
- const dt=Math.min((t-last)/1000,.035);last=t;elapsed+=dt;
- update(dt);draw();updateClock();
- if(elapsed>=MATCH_SECONDS){finish();return}
- requestAnimationFrame(loop)
+function nearest(team,excludeGoalie=false){
+ let best=-1,bd=1e9;players.forEach((p,i)=>{if(p.team===team&&(!excludeGoalie||p.role!==0)){let d=(p.x-ball.x)**2+(p.y-ball.y)**2;if(d<bd){bd=d;best=i}}});return best
 }
-function updateClock(){let m=Math.min(90,Math.floor(elapsed/MATCH_SECONDS*90)),s=Math.floor((elapsed/MATCH_SECONDS*90-m)*60);$("#clock").textContent=String(m).padStart(2,"0")+":"+String(s).padStart(2,"0")}
-function nearestToBall(team){
- let best=-1,bd=1e9;players.forEach((p,i)=>{if(p.team===team){let d=(p.x-ball.x)**2+(p.y-ball.y)**2;if(d<bd){bd=d;best=i}}});return best
-}
-function claimBall(i){
- if(ball.owner!==null)players[ball.owner].hasBall=false;
- ball.owner=i;players[i].hasBall=true;ball.vx=ball.vy=0;ball.lastTeam=players[i].team;
- if(players[i].team===0&&i!==controlled)controlled=i;
-}
-function kick(i,power,targetY=null){
- const p=players[i],dir=p.team===0?1:-1;
- p.hasBall=false;ball.owner=null;ball.x=p.x+dir*20;ball.y=p.y;
- let ty=targetY??(H*.5+(Math.random()-.5)*H*.3),tx=p.team===0?W+60:-60;
- let dx=tx-ball.x,dy=ty-ball.y,l=Math.hypot(dx,dy)||1;ball.vx=dx/l*power;ball.vy=dy/l*power;ball.lastTeam=p.team;
+function claim(i){if(ball.owner!==null)players[ball.owner].hasBall=false;ball.owner=i;players[i].hasBall=true;ball.lastTeam=players[i].team;if(players[i].team===0)controlled=i}
+function selectBestPassTarget(i){
+ let p=players[i],dir=p.team===0?1:-1,candidates=players.map((q,j)=>({q,j,forward:(q.x-p.x)*dir,dist:Math.hypot(q.x-p.x,q.y-p.y)})).filter(o=>o.q.team===p.team&&o.j!==i&&o.q.role!==0&&o.dist<320);
+ candidates.sort((a,b)=>(b.forward*1.4-b.dist*.15)-(a.forward*1.4-a.dist*.15));return candidates[0]||null
 }
 function passBall(){
- let p=players[controlled];if(!p||ball.owner!==controlled)return;
- let mates=players.map((q,i)=>({q,i,d:Math.hypot(q.x-p.x,q.y-p.y)})).filter(o=>o.q.team===p.team&&o.i!==controlled);
- mates.sort((a,b)=>a.d-b.d);let trg=mates[0];if(!trg)return;
- p.hasBall=false;ball.owner=null;let dx=trg.q.x-p.x,dy=trg.q.y-p.y,l=Math.hypot(dx,dy)||1;ball.x=p.x;ball.y=p.y;ball.vx=dx/l*285;ball.vy=dy/l*285;ball.lastTeam=p.team;
+ if(ball.owner!==controlled)return toast("Сначала овладейте мячом");
+ const p=players[controlled],t=selectBestPassTarget(controlled);if(!t)return;
+ p.hasBall=false;ball.owner=null;let leadX=t.q.x+t.q.vx*.35,leadY=t.q.y+t.q.vy*.35,dx=leadX-p.x,dy=leadY-p.y,l=Math.hypot(dx,dy)||1;
+ ball.x=p.x;ball.y=p.y;ball.vx=dx/l*330;ball.vy=dy/l*330;ball.passTarget=t.j;ball.lastTeam=p.team;toast("Пас на "+t.q.name)
 }
-function shootBall(){if(ball.owner===controlled)kick(controlled,440,H/2+(Math.random()-.5)*55)}
-function update(dt){
- const field={l:30,r:W-30,t:30,b:H-30};
- let cp=players[controlled];
- if(cp&&cp.team===0){
-   let mag=Math.hypot(joystick.x,joystick.y),sp=cp.speed*(sprinting?1.55:1);
-   if(mag>.05){cp.vx=joystick.x*sp;cp.vy=joystick.y*sp}else{cp.vx*=.78;cp.vy*=.78}
- }
- players.forEach((p,i)=>{
-   if(i!==controlled){
-    let targetX,targetY;
-    if(p.team===1){
-      if(i===nearestToBall(1)){targetX=ball.x;targetY=ball.y}
-      else{let k=i-5;targetX=W-[.13,.27,.27,.40,.43][k]*W+(ball.x-W/2)*.18;targetY=[.5,.3,.7,.4,.62][k]*H+(ball.y-H/2)*.12}
-    }else{
-      if(i===nearestToBall(0)&&ball.lastTeam===1){targetX=ball.x;targetY=ball.y}
-      else{targetX=[.13,.27,.27,.40,.43][i]*W+(ball.x-W/2)*.18;targetY=[.5,.3,.7,.4,.62][i]*H+(ball.y-H/2)*.12}
-    }
-    let dx=targetX-p.x,dy=targetY-p.y,l=Math.hypot(dx,dy)||1,s=p.speed*.78;p.vx=dx/l*s;p.vy=dy/l*s;
+function shootBall(){if(ball.owner!==controlled)return;let p=players[controlled],goalX=p.team===0?W+30:-30,goalY=H/2+(Math.random()-.5)*45,dx=goalX-p.x,dy=goalY-p.y,l=Math.hypot(dx,dy)||1;p.hasBall=false;ball.owner=null;ball.x=p.x;ball.y=p.y;ball.vx=dx/l*470;ball.vy=dy/l*470;ball.lastTeam=p.team}
+function switchPlayer(){
+ const candidates=players.map((p,i)=>({i,p,d:Math.hypot(p.x-ball.x,p.y-ball.y)})).filter(o=>o.p.team===0&&o.p.role!==0).sort((a,b)=>a.d-b.d);
+ if(!candidates.length)return;let idx=candidates.findIndex(o=>o.i===controlled);controlled=candidates[(idx+1)%Math.min(3,candidates.length)].i;toast("Выбран: "+players[controlled].name)
+}
+function teamAI(p,i,dt){
+ const team=p.team,dir=team===0?1:-1,own=ball.owner!==null&&players[ball.owner].team===team;
+ let tx=p.homeX,ty=p.homeY;
+ if(p.role===0){tx=p.homeX;ty=Math.max(H*.39,Math.min(H*.61,ball.y))}
+ else if(own){
+   const carrier=players[ball.owner];
+   if(i===ball.owner){
+     tx=p.x+dir*90;ty=p.y+(H/2-p.y)*.08;
+     if((team===0&&p.x>W*.68)||(team===1&&p.x<W*.32)){if(Math.random()<dt*.55)shootAI(i)}
+     else if(Math.random()<dt*.18)passAI(i)
+   }else{
+     const offsets=[0,-110,110,-30,80];tx=carrier.x+dir*(p.role===4?130:p.role===3?85:20);ty=carrier.y+offsets[p.role];
    }
-   p.x=Math.max(field.l+5,Math.min(field.r-5,p.x+p.vx*dt));p.y=Math.max(field.t+5,Math.min(field.b-5,p.y+p.vy*dt));
- });
- if(ball.owner!==null){
-   let p=players[ball.owner],dir=p.team===0?1:-1;ball.x=p.x+dir*(p.r+5);ball.y=p.y;
-   if(p.team===1&&p.x<W*.52&&Math.random()<dt*.65)kick(ball.owner,300,H/2+(Math.random()-.5)*110);
  }else{
-   ball.x+=ball.vx*dt;ball.y+=ball.vy*dt;ball.vx*=Math.pow(.25,dt);ball.vy*=Math.pow(.25,dt);
-   if(ball.y<field.t||ball.y>field.b){ball.y=Math.max(field.t,Math.min(field.b,ball.y));ball.vy*=-.65}
-   players.forEach((p,i)=>{if(ball.owner===null&&Math.hypot(p.x-ball.x,p.y-ball.y)<p.r+ball.r+3)claimBall(i)});
+   let presser=nearest(team,true);
+   if(i===presser){tx=ball.x;ty=ball.y}
+   else{
+     let shift=(ball.x-W/2)*.32;tx=p.homeX+shift;ty=p.homeY+(ball.y-H/2)*.22;
+   }
  }
- // tackles
- players.forEach((a,i)=>players.forEach((b,j)=>{if(i<j&&a.team!==b.team&&Math.hypot(a.x-b.x,a.y-b.y)<a.r+b.r-2){
-   if(ball.owner===i&&Math.random()<dt*2.3)claimBall(j);else if(ball.owner===j&&Math.random()<dt*2.3)claimBall(i)
- }}));
- // goals: center goal opening
- const goalTop=H*.38,goalBot=H*.62;
- if(ball.x>W-18&&ball.y>goalTop&&ball.y<goalBot){score[0]++;$("#score").textContent=score[0]+" : "+score[1];eventMsg("⚽ ГОЛ! "+home.name);resetKickoff(1)}
- else if(ball.x<18&&ball.y>goalTop&&ball.y<goalBot){score[1]++;$("#score").textContent=score[0]+" : "+score[1];eventMsg("⚽ ГОЛ! "+away.name);resetKickoff(0)}
- else if(ball.x<field.l||ball.x>field.r){ball.x=Math.max(field.l,Math.min(field.r,ball.x));ball.vx*=-.55}
+ let dx=tx-p.x,dy=ty-p.y,l=Math.hypot(dx,dy)||1,sp=p.speed*(i===nearest(team,true)&&!own?1.05:.78);p.vx=dx/l*sp;p.vy=dy/l*sp;
 }
+function passAI(i){let t=selectBestPassTarget(i);if(!t)return;let p=players[i];p.hasBall=false;ball.owner=null;let dx=t.q.x-p.x,dy=t.q.y-p.y,l=Math.hypot(dx,dy)||1;ball.x=p.x;ball.y=p.y;ball.vx=dx/l*310;ball.vy=dy/l*310;ball.lastTeam=p.team}
+function shootAI(i){let p=players[i],gx=p.team===0?W+30:-30,gy=H/2+(Math.random()-.5)*65,dx=gx-p.x,dy=gy-p.y,l=Math.hypot(dx,dy)||1;p.hasBall=false;ball.owner=null;ball.x=p.x;ball.y=p.y;ball.vx=dx/l*430;ball.vy=dy/l*430;ball.lastTeam=p.team}
+function update(dt){
+ const bounds={l:30,r:W-30,t:30,b:H-30};let cp=players[controlled];
+ if(cp&&cp.team===0){let mag=Math.hypot(joy.x,joy.y),sp=cp.speed*(sprinting?1.55:1);if(mag>.04){cp.vx=joy.x*sp;cp.vy=joy.y*sp}else{cp.vx*=.75;cp.vy*=.75}}
+ players.forEach((p,i)=>{if(i!==controlled)teamAI(p,i,dt);p.x=Math.max(bounds.l+4,Math.min(bounds.r-4,p.x+p.vx*dt));p.y=Math.max(bounds.t+4,Math.min(bounds.b-4,p.y+p.vy*dt))});
+ if(ball.owner!==null){let p=players[ball.owner],dir=p.team===0?1:-1;ball.x=p.x+dir*20;ball.y=p.y}
+ else{
+  ball.x+=ball.vx*dt;ball.y+=ball.vy*dt;ball.vx*=Math.pow(.18,dt);ball.vy*=Math.pow(.18,dt);
+  if(ball.y<bounds.t||ball.y>bounds.b){ball.y=Math.max(bounds.t,Math.min(bounds.b,ball.y));ball.vy*=-.65}
+  let cand=players.map((p,i)=>({p,i,d:Math.hypot(p.x-ball.x,p.y-ball.y)})).filter(o=>o.d<o.p.r+ball.r+5).sort((a,b)=>a.d-b.d)[0];if(cand)claim(cand.i)
+ }
+ players.forEach((a,i)=>players.forEach((b,j)=>{if(i<j&&a.team!==b.team&&Math.hypot(a.x-b.x,a.y-b.y)<27){if(ball.owner===i&&Math.random()<dt*1.8)claim(j);else if(ball.owner===j&&Math.random()<dt*1.8)claim(i)}}));
+ const gt=H*.38,gb=H*.62;
+ if(ball.x>W-16&&ball.y>gt&&ball.y<gb){score[0]++;goal(0)}
+ else if(ball.x<16&&ball.y>gt&&ball.y<gb){score[1]++;goal(1)}
+ else if(ball.x<bounds.l||ball.x>bounds.r){ball.x=Math.max(bounds.l,Math.min(bounds.r,ball.x));ball.vx*=-.55}
+}
+function goal(team){$("#score").textContent=score[0]+" : "+score[1];toast("⚽ ГОЛ! "+(team===0?homeTeam.name:awayTeam.name));kickoff(team===0?1:0)}
+function loop(t){if(paused||ended)return;let dt=Math.min((t-last)/1000,.035);last=t;elapsed+=dt;update(dt);draw();let gm=Math.min(90,Math.floor(elapsed/MATCH_TIME*90)),gs=Math.floor((elapsed/MATCH_TIME*90-gm)*60);$("#clock").textContent=String(gm).padStart(2,"0")+":"+String(gs).padStart(2,"0");if(elapsed>=MATCH_TIME){finishMatch();return}requestAnimationFrame(loop)}
 function draw(){
- ctx.clearRect(0,0,W,H);
- // grass
- ctx.fillStyle="#176a39";ctx.fillRect(0,0,W,H);
- const stripes=10;for(let i=0;i<stripes;i++){ctx.fillStyle=i%2?"#1b7440":"#176a39";ctx.fillRect(i*W/stripes,0,W/stripes,H)}
- ctx.strokeStyle="#d7f5de";ctx.lineWidth=2;ctx.globalAlpha=.82;
- ctx.strokeRect(30,30,W-60,H-60);ctx.beginPath();ctx.moveTo(W/2,30);ctx.lineTo(W/2,H-30);ctx.stroke();
- ctx.beginPath();ctx.arc(W/2,H/2,55,0,Math.PI*2);ctx.stroke();ctx.beginPath();ctx.arc(W/2,H/2,3,0,Math.PI*2);ctx.fillStyle="#d7f5de";ctx.fill();
- // boxes/goals
- ctx.strokeRect(30,H*.25,110,H*.5);ctx.strokeRect(W-140,H*.25,110,H*.5);
- ctx.strokeRect(6,H*.38,24,H*.24);ctx.strokeRect(W-30,H*.38,24,H*.24);ctx.globalAlpha=1;
- players.forEach((p,i)=>{
-   let c=p.team===0?home:away,fill=p.team===0?c.home:c.away,text=p.team===0?c.homeText:c.awayText;
-   if(i===controlled){ctx.beginPath();ctx.arc(p.x,p.y,p.r+7,0,Math.PI*2);ctx.strokeStyle="#fff36b";ctx.lineWidth=3;ctx.stroke();ctx.fillStyle="#fff36b";ctx.beginPath();ctx.moveTo(p.x,p.y-p.r-16);ctx.lineTo(p.x-6,p.y-p.r-26);ctx.lineTo(p.x+6,p.y-p.r-26);ctx.fill()}
-   ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=p.team===0?"#cbefff":"#b8c6d8";ctx.lineWidth=2;ctx.stroke();
-   ctx.fillStyle=text;ctx.font="900 12px Arial";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(p.num,p.x,p.y+.5);
-   if(i===controlled){ctx.font="700 10px Arial";ctx.fillStyle="#fff";ctx.fillText(p.name,p.x,p.y-p.r-33)}
- });
- ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill();ctx.strokeStyle="#222";ctx.lineWidth=1.5;ctx.stroke();
+ ctx.clearRect(0,0,W,H);for(let i=0;i<10;i++){ctx.fillStyle=i%2?"#1c7340":"#17693a";ctx.fillRect(i*W/10,0,W/10,H)}
+ ctx.strokeStyle="#d9f6df";ctx.lineWidth=2;ctx.globalAlpha=.85;ctx.strokeRect(30,30,W-60,H-60);ctx.beginPath();ctx.moveTo(W/2,30);ctx.lineTo(W/2,H-30);ctx.stroke();ctx.beginPath();ctx.arc(W/2,H/2,55,0,Math.PI*2);ctx.stroke();ctx.strokeRect(30,H*.25,110,H*.5);ctx.strokeRect(W-140,H*.25,110,H*.5);ctx.strokeRect(6,H*.38,24,H*.24);ctx.strokeRect(W-30,H*.38,24,H*.24);ctx.globalAlpha=1;
+ players.forEach((p,i)=>{let c=p.team===0?homeTeam:awayTeam,fill=p.team===0?c.home:c.away,text=p.team===0?c.ht:c.at;if(i===controlled){ctx.beginPath();ctx.arc(p.x,p.y,p.r+7,0,Math.PI*2);ctx.strokeStyle="#fff36b";ctx.lineWidth=3;ctx.stroke();ctx.fillStyle="#fff36b";ctx.beginPath();ctx.moveTo(p.x,p.y-p.r-16);ctx.lineTo(p.x-6,p.y-p.r-26);ctx.lineTo(p.x+6,p.y-p.r-26);ctx.fill()}ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle="#fff8";ctx.lineWidth=2;ctx.stroke();ctx.fillStyle=text;ctx.font="900 12px Arial";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(p.num,p.x,p.y);if(i===controlled){ctx.font="700 10px Arial";ctx.fillStyle="#fff";ctx.fillText(p.name,p.x,p.y-p.r-34)}});
+ ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);ctx.fillStyle="#fff";ctx.fill();ctx.strokeStyle="#222";ctx.stroke()
 }
-function pointerStart(e){
- if(e.clientX>W*.5)return;
- joystick.active=true;joystick.id=e.pointerId;joystick.cx=e.clientX;joystick.cy=e.clientY;joystick.x=joystick.y=0;
- const j=$("#joystick");j.style.display="block";j.style.left=(e.clientX-60)+"px";j.style.top=(e.clientY-60)+"px";canvas.setPointerCapture?.(e.pointerId)
+function finishMatch(){
+ ended=true;$("#resultOverlay").style.display="flex";let winner=score[0]===score[1]?"Ничья":score[0]>score[1]?homeTeam.name:awayTeam.name;$("#resultTitle").textContent=winner;$("#resultText").textContent=`${homeTeam.name} ${score[0]} : ${score[1]} ${awayTeam.name}`;
+ if(currentMode==="career")applyCareerResult()
 }
-function pointerMove(e){
- if(!joystick.active||e.pointerId!==joystick.id)return;
- let dx=e.clientX-joystick.cx,dy=e.clientY-joystick.cy,l=Math.hypot(dx,dy),max=42;if(l>max){dx*=max/l;dy*=max/l}
- joystick.x=dx/max;joystick.y=dy/max;$("#joyKnob").style.transform=`translate(${dx}px,${dy}px)`
+function applyCareerResult(){
+ const club=CLUBS.find(x=>x.id===career.clubId),fx=career.fixtures.find(f=>!f.played);if(!fx)return;
+ let myHome=fx.home===club.id,myGoals=myHome?score[0]:score[1],oppGoals=myHome?score[1]:score[0];fx.played=true;fx.score=`${myHome?myGoals:oppGoals}:${myHome?oppGoals:myGoals}`;
+ updateStanding(fx.home,score[0],score[1]);updateStanding(fx.away,score[1],score[0]);
+ CLUBS.filter(c=>![fx.home,fx.away].includes(c.id)).forEach((c,i,arr)=>{if(i%2===0&&arr[i+1]){let a=arr[i+1],g1=Math.floor(Math.random()*4),g2=Math.floor(Math.random()*4);updateStanding(c.id,g1,g2);updateStanding(a.id,g2,g1)}});
+ career.round++;career.lastResult=`${homeTeam.name} ${score[0]}:${score[1]} ${awayTeam.name}`;career.morale=Math.max(35,Math.min(100,career.morale+(myGoals>oppGoals?5:myGoals===oppGoals?1:-4)));career.confidence=Math.max(25,Math.min(100,career.confidence+(myGoals>oppGoals?4:myGoals===oppGoals?0:-3)));saveCareer()
 }
-function pointerEnd(e){if(e.pointerId!==joystick.id)return;joystick.active=false;joystick.x=joystick.y=0;$("#joystick").style.display="none";$("#joyKnob").style.transform=""}
-canvas.addEventListener("pointerdown",pointerStart);canvas.addEventListener("pointermove",pointerMove);canvas.addEventListener("pointerup",pointerEnd);canvas.addEventListener("pointercancel",pointerEnd);
-$("#pass").addEventListener("pointerdown",e=>{e.preventDefault();passBall()});
-$("#shoot").addEventListener("pointerdown",e=>{e.preventDefault();shootBall()});
-$("#switch").addEventListener("pointerdown",e=>{e.preventDefault();controlled=nearestToBall(0);eventMsg("Выбран: "+players[controlled].name)});
-$("#sprint").addEventListener("pointerdown",e=>{e.preventDefault();sprinting=true});
-["pointerup","pointercancel","pointerleave"].forEach(ev=>$("#sprint").addEventListener(ev,()=>sprinting=false));
-document.addEventListener("contextmenu",e=>e.preventDefault());
-document.addEventListener("touchmove",e=>{if(game.classList.contains("active"))e.preventDefault()},{passive:false});
+function updateStanding(id,gf,ga){let r=career.teams.find(x=>x.id===id);r.p++;r.gf+=gf;r.ga+=ga;if(gf>ga){r.w++;r.pts+=3}else if(gf===ga){r.d++;r.pts++}else r.l++}
+function toast(t){let e=$("#toast");e.textContent=t;e.classList.add("show");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("show"),1500)}
+$("#pauseBtn").onclick=()=>{paused=true;$("#pauseOverlay").style.display="flex"};$("#resume").onclick=()=>{paused=false;$("#pauseOverlay").style.display="none";last=performance.now();requestAnimationFrame(loop)};
+$("#quit").onclick=()=>{ended=true;$("#pauseOverlay").style.display="none";currentMode==="career"?openCareer():show("home")};
+$("#continueCareer").onclick=()=>{ended=true;$("#resultOverlay").style.display="none";currentMode==="career"?openCareer():show("home")};
+$("#resultHome").onclick=()=>{ended=true;$("#resultOverlay").style.display="none";show("home")};
+function pStart(e){if(e.clientX>W*.52)return;joy.active=true;joy.id=e.pointerId;joy.cx=e.clientX;joy.cy=e.clientY;joy.x=joy.y=0;let j=$("#joy");j.style.display="block";j.style.left=e.clientX-59+"px";j.style.top=e.clientY-59+"px";canvas.setPointerCapture?.(e.pointerId)}
+function pMove(e){if(!joy.active||e.pointerId!==joy.id)return;let dx=e.clientX-joy.cx,dy=e.clientY-joy.cy,l=Math.hypot(dx,dy),m=41;if(l>m){dx*=m/l;dy*=m/l}joy.x=dx/m;joy.y=dy/m;$("#knob").style.transform=`translate(${dx}px,${dy}px)`}
+function pEnd(e){if(e.pointerId!==joy.id)return;joy.active=false;joy.x=joy.y=0;$("#joy").style.display="none";$("#knob").style.transform=""}
+canvas.addEventListener("pointerdown",pStart);canvas.addEventListener("pointermove",pMove);canvas.addEventListener("pointerup",pEnd);canvas.addEventListener("pointercancel",pEnd);
+$("#pass").onpointerdown=e=>{e.preventDefault();passBall()};$("#shoot").onpointerdown=e=>{e.preventDefault();shootBall()};$("#switch").onpointerdown=e=>{e.preventDefault();switchPlayer()};$("#sprint").onpointerdown=e=>{e.preventDefault();sprinting=true};["pointerup","pointercancel","pointerleave"].forEach(ev=>$("#sprint").addEventListener(ev,()=>sprinting=false));
+document.addEventListener("touchmove",e=>{if($("#game").classList.contains("active"))e.preventDefault()},{passive:false});document.addEventListener("contextmenu",e=>e.preventDefault());
+let saved=localStorage.getItem("rplCareerV2");if(saved){try{career=JSON.parse(saved)}catch{}}
 </script>
 </body>
 </html>
