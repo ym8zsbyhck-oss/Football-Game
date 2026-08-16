@@ -45,9 +45,9 @@ window.App={
   pickerClubs(){return this.league==="fnl2"?DB.clubs.filter(c=>c.league==="fnl2"):DB.clubs.filter(c=>c.league===this.league)},
   renderPicker(){
     const box=this.$("#clubGrid");box.innerHTML="";
-    this.pickerClubs().forEach(c=>{let b=document.createElement("button");b.className="club";b.innerHTML=`<img><span>${c.name}</span><small>${c.group?c.group==="gold"?"Золото":"Серебро":""}</small>`;Logos.bind(b.querySelector("img"),c);b.onclick=()=>{this.selected=c;document.querySelectorAll(".club").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");this.$("#selectedName").textContent=c.name;Logos.bind(this.$("#selectedLogo"),c);this.$("#startCareer").disabled=false};box.appendChild(b)})
+    this.pickerClubs().forEach(c=>{let b=document.createElement("button");b.className="club";b.innerHTML=`<img><span>${c.name}</span><small>${c.group?(c.group==="gold"?"Золото":"Серебро")+" • ":""}РТГ ${c.rating}</small>`;Logos.bind(b.querySelector("img"),c);b.onclick=()=>{this.selected=c;document.querySelectorAll(".club").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");this.$("#selectedName").textContent=`${c.name} • рейтинг ${c.rating}`;Logos.bind(this.$("#selectedLogo"),c);this.$("#startCareer").disabled=false};box.appendChild(b)})
   },
-  openCareer(){const c=Career.club();this.$("#careerName").textContent=c.name;this.$("#careerLeague").textContent=DB.leagues[Career.state.league].name+(Career.state.group?` • ${Career.state.group==="gold"?"Золото":"Серебро"}`:"");Logos.bind(this.$("#careerLogo"),c);this.show("career");this.renderCareer("overview")},
+  openCareer(){const c=Career.club();this.$("#careerName").textContent=c.name;this.$("#careerLeague").textContent=DB.leagues[Career.state.league].name+(Career.state.group?` • ${Career.state.group==="gold"?"Золото":"Серебро"}`:"")+` • РТГ ${c.rating}`;Logos.bind(this.$("#careerLogo"),c);this.show("career");this.renderCareer("overview")},
   renderCareer(tab){
     document.querySelectorAll("[data-tab]").forEach(x=>x.classList.toggle("active",x.dataset.tab===tab));const s=Career.state,c=Career.club(),co=this.$("#content");
     if(tab==="overview"){const f=Career.nextFixture(),opp=f?DB.clubs.find(x=>x.id===(f.home===c.id?f.away:f.home)):null;co.innerHTML=`<h2>Обзор</h2><div class="stats"><div>Тур<b>${s.round}</b></div><div>Мораль<b>${s.morale}%</b></div><div>Доверие<b>${s.confidence}%</b></div><div>Место<b>${Career.sorted().findIndex(x=>x.id===c.id)+1}</b></div></div><div class="card"><h3>Следующий матч</h3>${f?`<p>${DB.clubs.find(x=>x.id===f.home).name} — ${DB.clubs.find(x=>x.id===f.away).name}</p><button id="play" class="primary">СЫГРАТЬ</button>`:"<p>Этап завершён.</p>"}</div><div class="card"><b>ИИ матча</b><p>FC 26 / FC IQ-inspired: поддержка владельца мяча, забегания в свободные зоны, роли, компактная оборона и отдельное позиционирование вратаря.</p></div>`;this.$("#play")?.addEventListener("click",()=>this.playFixture(f))}
@@ -59,15 +59,20 @@ window.App={
   finishMatch(sc){this.$("#result").style.display="flex";this.$("#resultText").textContent=`${this.engine.home.name} ${sc[0]} : ${sc[1]} ${this.engine.away.name}`;Career.applyFixture(this.currentFixture,sc[0],sc[1])},
   updateHUD(e){
     this.$("#score").textContent=`${e.score[0]} : ${e.score[1]}`;
-    let minute=e.displayMinute();
-    let sec=0;
+    let minute=e.displayMinute(),sec=0;
     if(e.halfElapsed<=e.realHalfDuration){
       const base=e.half===1?0:45;
       const exact=e.halfElapsed/e.realHalfDuration*45;
       minute=Math.floor(base+exact);sec=Math.floor((exact-Math.floor(exact))*60);
     }
     this.$("#clock").textContent=String(minute).padStart(2,"0")+":"+String(sec).padStart(2,"0")+(e.addedMinutes&&e.halfElapsed>=e.realHalfDuration?` +${e.addedMinutes}`:"");
-    this.$("#shoot").textContent=e.ball.owner===e.controlled?"УДАР":"ОТБОР";
+
+    const ownBall=e.ball.owner!==null&&e.players[e.ball.owner]?.team===e.userSide;
+    const controlledOwn=e.ball.owner===e.controlled;
+    this.$("#shoot").textContent=controlledOwn?"УДАР":"ОТБОР";
+    this.$("#pass").textContent=ownBall?"ПАС":"ПРЕСС";
+    this.$("#through").textContent=ownBall?"ВРАЗРЕЗ":"2-Й ПРЕСС";
+    this.$("#switch").classList.toggle("disabledAction",controlledOwn);
 
     const p=e.players[e.controlled];
     const enemyOwner=(e.ball.owner!==null&&e.players[e.ball.owner]?.team!==e.userSide)?e.players[e.ball.owner]:null;
@@ -79,7 +84,7 @@ window.App={
       this.$("#gkInfo").innerHTML=`<b>${enemyOwner.name}</b><span>№ ${enemyOwner.num}</span><small>Соперник с мячом • ${Math.round(enemyOwner.stamina*100)}%</small><div class="stBar"><i style="width:${Math.round(enemyOwner.stamina*100)}%"></i></div>`;
     }else{
       this.$("#gkInfo").style.opacity=".35";
-      this.$("#gkInfo").innerHTML=`<b>Соперник</b><span>—</span><small>Ожидание владения</small><div class="stBar"><i style="width:0%"></i></div>`;
+      this.$("#gkInfo").innerHTML=`<b>Соперник</b><span>—</span><small>Без владения</small><div class="stBar"><i style="width:0%"></i></div>`;
     }
   },
   showHalftime(e){
@@ -110,20 +115,74 @@ window.App={
 
   setupControls(){
     const c=this.$("#pitch"),joy=this.$("#joy"),kn=this.$("#knob");let pid=null,cx=0,cy=0;
-    c.onpointerdown=e=>{if(e.clientX>innerWidth*.53)return;pid=e.pointerId;cx=e.clientX;cy=e.clientY;joy.style.display="block";joy.style.left=e.clientX-59+"px";joy.style.top=e.clientY-59+"px";c.setPointerCapture?.(e.pointerId)};
-    c.onpointermove=e=>{if(e.pointerId!==pid||!this.engine)return;let dx=e.clientX-cx,dy=e.clientY-cy,l=Math.hypot(dx,dy),m=41;if(l>m){dx*=m/l;dy*=m/l}this.engine.joy.x=dx/m;this.engine.joy.y=dy/m;kn.style.transform=`translate(${dx}px,${dy}px)`};
-    const end=e=>{if(e.pointerId!==pid)return;pid=null;if(this.engine){this.engine.joy.x=0;this.engine.joy.y=0}joy.style.display="none";kn.style.transform=""};c.onpointerup=end;c.onpointercancel=end;
-    this.$("#pass").onpointerdown=()=>this.engine?.startPassCharge();
-    this.$("#pass").onpointerup=()=>this.engine?.releasePass(false);
-    this.$("#pass").onpointercancel=()=>this.engine?.releasePass(false);
-    this.$("#through").onpointerdown=()=>this.engine?.startPassCharge();
-    this.$("#through").onpointerup=()=>this.engine?.releasePass(true);
-    this.$("#through").onpointercancel=()=>this.engine?.releasePass(true);
-    this.$("#shoot").onpointerdown=()=>{if(!this.engine)return;if(this.engine.ball.owner===this.engine.controlled)this.engine.startShotCharge();else this.engine.tackle()};
+    c.onpointerdown=e=>{
+      if(e.clientX>innerWidth*.53)return;
+      pid=e.pointerId;cx=e.clientX;cy=e.clientY;
+      joy.style.display="block";joy.style.left=e.clientX-59+"px";joy.style.top=e.clientY-59+"px";
+      c.setPointerCapture?.(e.pointerId);
+    };
+    c.onpointermove=e=>{
+      if(e.pointerId!==pid||!this.engine)return;
+      let dx=e.clientX-cx,dy=e.clientY-cy,l=Math.hypot(dx,dy),m=41;
+      if(l>m){dx*=m/l;dy*=m/l}
+      this.engine.joy.x=dx/m;this.engine.joy.y=dy/m;kn.style.transform=`translate(${dx}px,${dy}px)`;
+    };
+    const end=e=>{
+      if(e.pointerId!==pid)return;pid=null;
+      if(this.engine){this.engine.joy.x=0;this.engine.joy.y=0}
+      joy.style.display="none";kn.style.transform="";
+    };
+    c.onpointerup=end;c.onpointercancel=end;
+
+    const userHasBall=()=>this.engine&&this.engine.ball.owner!==null&&this.engine.players[this.engine.ball.owner]?.team===this.engine.userSide;
+    const controlledOwns=()=>this.engine&&this.engine.ball.owner===this.engine.controlled;
+
+    this.$("#pass").onpointerdown=()=>{
+      if(!this.engine)return;
+      if(controlledOwns())this.engine.startPassCharge();
+      else this.engine.pressAssist=true;
+    };
+    this.$("#pass").onpointerup=()=>{
+      if(!this.engine)return;
+      if(this.engine.passCharging)this.engine.releasePass(false);
+      this.engine.pressAssist=false;
+    };
+    this.$("#pass").onpointercancel=()=>{
+      if(!this.engine)return;
+      if(this.engine.passCharging)this.engine.releasePass(false);
+      this.engine.pressAssist=false;
+    };
+
+    this.$("#through").onpointerdown=()=>{
+      if(!this.engine)return;
+      if(controlledOwns())this.engine.startPassCharge();
+      else this.engine.secondPress=true;
+    };
+    this.$("#through").onpointerup=()=>{
+      if(!this.engine)return;
+      if(this.engine.passCharging)this.engine.releasePass(true);
+      this.engine.secondPress=false;
+    };
+    this.$("#through").onpointercancel=()=>{
+      if(!this.engine)return;
+      if(this.engine.passCharging)this.engine.releasePass(true);
+      this.engine.secondPress=false;
+    };
+
+    this.$("#shoot").onpointerdown=()=>{
+      if(!this.engine)return;
+      if(controlledOwns())this.engine.startShotCharge();else this.engine.tackle();
+    };
     this.$("#shoot").onpointerup=()=>this.engine?.releaseShot();
     this.$("#shoot").onpointercancel=()=>this.engine?.releaseShot();
-    this.$("#switch").onpointerdown=()=>this.engine?.switch();this.$("#sprint").onpointerdown=()=>{if(this.engine)this.engine.sprint=true};["pointerup","pointerleave","pointercancel"].forEach(x=>this.$("#sprint").addEventListener(x,()=>{if(this.engine)this.engine.sprint=false}));
-    this.$("#pause").onclick=()=>{if(!this.engine)return;this.engine.paused=true;this.$("#pauseOverlay").style.display="flex"};this.$("#resume").onclick=()=>{this.$("#pauseOverlay").style.display="none";this.engine.paused=false;this.engine.last=performance.now();requestAnimationFrame(t=>this.engine.loop(t))};
+
+    this.$("#switch").onpointerdown=()=>this.engine?.switch();
+
+    this.$("#sprint").onpointerdown=()=>{if(this.engine)this.engine.sprint=true};
+    ["pointerup","pointerleave","pointercancel"].forEach(x=>this.$("#sprint").addEventListener(x,()=>{if(this.engine)this.engine.sprint=false}));
+
+    this.$("#pause").onclick=()=>{if(!this.engine)return;this.engine.paused=true;this.$("#pauseOverlay").style.display="flex"};
+    this.$("#resume").onclick=()=>{this.$("#pauseOverlay").style.display="none";this.engine.paused=false;this.engine.last=performance.now();requestAnimationFrame(t=>this.engine.loop(t))};
     this.$("#continue").onclick=()=>{this.$("#result").style.display="none";this.openCareer()}
   }
 };

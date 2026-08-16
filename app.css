@@ -384,3 +384,151 @@ canvas,
   width:100vw;
   height:var(--app-h);
 }
+
+/* v0.9 — broadcast + football-control polish */
+.broadcastBug{
+  position:absolute;
+  z-index:10;
+  top:max(calc(var(--st) + 6px),calc(env(safe-area-inset-top) + 6px));
+  right:max(var(--sr),env(safe-area-inset-right));
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:2px;
+  pointer-events:none;
+  filter:drop-shadow(0 2px 5px #0009);
+}
+.broadcastBug img{
+  display:block;
+  width:76px;
+  height:auto;
+  object-fit:contain;
+  background:transparent;
+}
+.liveLine{
+  display:flex;
+  align-items:center;
+  gap:4px;
+  padding:2px 5px 2px 4px;
+  border-radius:5px;
+  background:#0b0b0bd9;
+  color:#fff;
+  font-size:7px;
+  line-height:1;
+  font-weight:900;
+  letter-spacing:.06em;
+}
+.liveLine i{
+  width:5px;height:5px;border-radius:50%;
+  background:#ff2f2f;
+  box-shadow:0 0 0 2px #ff2f2f22;
+}
+.disabledAction{
+  opacity:.42!important;
+  filter:saturate(.45);
+}
+.act{
+  transition:transform .08s ease,filter .08s ease,opacity .08s ease;
+}
+.act:active{
+  transform:scale(.93);
+  filter:brightness(1.14);
+}
+.logoLoading{
+  opacity:.35;
+}
+.club small{
+  min-height:11px;
+}
+@media (orientation:landscape) and (max-height:430px){
+  .broadcastBug{top:max(calc(var(--st) + 5px),calc(env(safe-area-inset-top) + 5px))}
+  .broadcastBug img{width:66px}
+  .liveLine{font-size:6px}
+}
+
+
+/* =========================================================
+   v0.9.2 — user's exact МАТЧ! on-screen broadcast logo
+   Source artwork is the uploaded PNG; no logo was redrawn.
+   ========================================================= */
+.broadcastBug{
+  position:absolute;
+  z-index:12;
+  top:max(calc(var(--st) + 7px),calc(env(safe-area-inset-top) + 7px));
+  right:max(calc(var(--sr) + 2px),calc(env(safe-area-inset-right) + 2px));
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:3px;
+  pointer-events:none;
+  background:transparent !important;
+  filter:drop-shadow(0 2px 4px #000b);
+}
+.broadcastBug img{
+  display:block;
+  width:92px;
+  height:auto;
+  max-height:34px;
+  object-fit:contain;
+  object-position:right center;
+  background:transparent !important;
+}
+.liveLine{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  min-height:13px;
+  padding:2px 6px 2px 5px;
+  border-radius:4px;
+  background:#050505d9;
+  border:1px solid #ffffff12;
+  color:#fff;
+  font-size:6.5px;
+  line-height:1;
+  font-weight:900;
+  letter-spacing:.08em;
+  text-shadow:0 1px 2px #000;
+}
+.liveLine i{
+  display:block;
+  width:5px;
+  height:5px;
+  flex:0 0 5px;
+  border-radius:50%;
+  background:#f32323;
+  box-shadow:0 0 5px #f3232388;
+}
+.liveLine span{white-space:nowrap}
+
+@media (orientation:landscape) and (max-height:430px){
+  .broadcastBug{
+    top:max(calc(var(--st) + 5px),calc(env(safe-area-inset-top) + 5px));
+    right:max(var(--sr),env(safe-area-inset-right));
+    gap:2px;
+  }
+  .broadcastBug img{
+    width:82px;
+    max-height:29px;
+  }
+  .liveLine{
+    min-height:11px;
+    padding:1.5px 5px;
+    font-size:5.8px;
+  }
+  .liveLine i{
+    width:4px;
+    height:4px;
+    flex-basis:4px;
+  }
+}
+
+/* iPhone 16 Pro Safari landscape target band */
+@media (orientation:landscape)
+       and (min-width:800px)
+       and (max-width:950px)
+       and (min-height:340px)
+       and (max-height:430px){
+  .broadcastBug img{width:78px}
+  .broadcastBug{right:max(calc(env(safe-area-inset-right) + 4px),16px)}
+}
