@@ -49,14 +49,198 @@ window.App={
   },
   openCareer(){const c=Career.club();this.$("#careerName").textContent=c.name;this.$("#careerLeague").textContent=DB.leagues[Career.state.league].name+(Career.state.group?` • ${Career.state.group==="gold"?"Золото":"Серебро"}`:"")+` • РТГ ${c.rating}`;Logos.bind(this.$("#careerLogo"),c);this.show("career");this.renderCareer("overview")},
   renderCareer(tab){
-    document.querySelectorAll("[data-tab]").forEach(x=>x.classList.toggle("active",x.dataset.tab===tab));const s=Career.state,c=Career.club(),co=this.$("#content");
-    if(tab==="overview"){const f=Career.nextFixture(),opp=f?DB.clubs.find(x=>x.id===(f.home===c.id?f.away:f.home)):null;co.innerHTML=`<h2>Обзор</h2><div class="stats"><div>Тур<b>${s.round}</b></div><div>Мораль<b>${s.morale}%</b></div><div>Доверие<b>${s.confidence}%</b></div><div>Место<b>${Career.sorted().findIndex(x=>x.id===c.id)+1}</b></div></div><div class="card"><h3>Следующий матч</h3>${f?`<p>${DB.clubs.find(x=>x.id===f.home).name} — ${DB.clubs.find(x=>x.id===f.away).name}</p><button id="play" class="primary">СЫГРАТЬ</button>`:"<p>Этап завершён.</p>"}</div><div class="card"><b>ИИ матча</b><p>v1.0.2 Authentic/FC-IQ layer: индивидуальные роли, фазы атаки/обороны, контрпрессинг, первый приём, умные забегания, физические дуэли и отдельный Keeper Brain.</p></div>`;this.$("#play")?.addEventListener("click",()=>this.playFixture(f))}
-    else if(tab==="table"){co.innerHTML=`<h2>Таблица</h2><table><tr><th>#</th><th>Клуб</th><th>И</th><th>В</th><th>Н</th><th>П</th><th>М</th><th>О</th></tr>${Career.sorted().map((r,i)=>`<tr><td>${i+1}</td><td>${DB.clubs.find(c=>c.id===r.id)?.name||r.id}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.gf}:${r.ga}</td><td><b>${r.pts}</b></td></tr>`).join("")}</table>`}
-    else if(tab==="calendar"){co.innerHTML=`<h2>Календарь</h2>${s.fixtures.map(f=>`<div class="fixture"><span>${f.round}</span><span>${DB.clubs.find(c=>c.id===f.home).name} — ${DB.clubs.find(c=>c.id===f.away).name}</span><b>${f.played?f.score:"—"}</b></div>`).join("")}`}
-    else if(tab==="rules"){co.innerHTML=`<h2>Повышение и вылет</h2><div class="card"><b>РПЛ</b><p>15–16 — прямой вылет. 13–14 — двухматчевые стыки.</p></div><div class="card"><b>Первая лига</b><p>1–2 — прямой выход в РПЛ. 3–4 — стыковые матчи. Три последних места — вылет.</p></div><div class="card"><b>Вторая лига А</b><p>Два этапа, «Золото» и «Серебро». В игровом сезоне группа сохраняется отдельно.</p></div>`}
+    document.querySelectorAll("[data-tab]").forEach(x=>x.classList.toggle("active",x.dataset.tab===tab));
+    const s=Career.state,c=Career.club(),co=this.$("#content");
+
+    const badge=f=>`<span class="compBadge ${f.competition||"league"}">${Career.competitionName(f)}</span>`;
+
+    if(tab==="overview"){
+      const f=Career.nextFixture();
+      const cupStatus=Career.cupStatusText();
+      const trophies=s.trophies?.length?s.trophies.length:0;
+
+      co.innerHTML=`
+        <h2>Обзор</h2>
+        <div class="stats">
+          <div>Тур лиги<b>${s.round}</b></div>
+          <div>Место<b>${Career.sorted().findIndex(x=>x.id===c.id)+1}</b></div>
+          <div>Кубок<b>${s.cup?.status==="winner"?"🏆":s.cup?.status==="eliminated"?"—":"●"}</b></div>
+          <div>Трофеи<b>${trophies}</b></div>
+        </div>
+
+        <div class="card nextMatchCard">
+          <h3>Следующий матч</h3>
+          ${f?`
+            ${badge(f)}
+            <p><b>${DB.clubs.find(x=>x.id===f.home)?.name}</b> — <b>${DB.clubs.find(x=>x.id===f.away)?.name}</b></p>
+            <small>${f.stage||f.label||Career.competitionName(f)}</small>
+            <button id="play" class="primary">СЫГРАТЬ</button>
+          `:"<p>Матчей в текущем календаре больше нет.</p>"}
+        </div>
+
+        <div class="card">
+          <b>FONBET Кубок России</b>
+          <p>${cupStatus}</p>
+        </div>
+
+        <div class="card">
+          <b>ИИ матча</b>
+          <p>v1.1.0: сохранено игровое ядро v1.0.3; Кубок и Суперкубок используют тот же полноценный матч 5×5.</p>
+        </div>`;
+
+      this.$("#play")?.addEventListener("click",()=>this.playFixture(f));
+    }
+
+    else if(tab==="table"){
+      co.innerHTML=`<h2>Таблица</h2>
+      <table>
+        <tr><th>#</th><th>Клуб</th><th>И</th><th>В</th><th>Н</th><th>П</th><th>М</th><th>О</th></tr>
+        ${Career.sorted().map((r,i)=>`
+          <tr>
+            <td>${i+1}</td>
+            <td>${DB.clubs.find(c=>c.id===r.id)?.name||r.id}</td>
+            <td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td>
+            <td>${r.gf}:${r.ga}</td><td><b>${r.pts}</b></td>
+          </tr>`).join("")}
+      </table>`;
+    }
+
+    else if(tab==="calendar"){
+      co.innerHTML=`<h2>Календарь сезона</h2>
+        ${Career.calendarItems().map(f=>`
+          <div class="fixture competitionFixture">
+            <span>${badge(f)}</span>
+            <span>
+              <b>${DB.clubs.find(c=>c.id===f.home)?.name||f.home}</b> —
+              <b>${DB.clubs.find(c=>c.id===f.away)?.name||f.away}</b>
+              <small>${f.stage||`Тур ${f.round||""}`}</small>
+            </span>
+            <b>${Career.fixtureResultText(f)}</b>
+          </div>`).join("")}`;
+    }
+
+    else if(tab==="tournaments"){
+      const cup=s.cup;
+      const supercup=s.supercup;
+      let cupHtml="";
+
+      if(cup?.group){
+        const table=Career.cupGroupSorted(cup.group);
+        cupHtml=`
+          <div class="card tournamentCard">
+            <h3>FONBET Кубок России</h3>
+            <p><b>${Career.cupStatusText()}</b></p>
+            <small>Группа ${cup.group} • Путь РПЛ</small>
+            <table class="cupTable">
+              <tr><th>#</th><th>Клуб</th><th>И</th><th>В</th><th>ВП</th><th>ПП</th><th>П</th><th>М</th><th>О</th></tr>
+              ${table.map((r,i)=>`
+                <tr class="${r.id===c.id?"me":""}">
+                  <td>${i+1}</td>
+                  <td>${DB.clubs.find(x=>x.id===r.id)?.name||r.id}</td>
+                  <td>${r.p}</td><td>${r.w}</td><td>${r.wp}</td><td>${r.lp}</td><td>${r.l}</td>
+                  <td>${r.gf}:${r.ga}</td><td><b>${r.pts}</b></td>
+                </tr>`).join("")}
+            </table>
+          </div>`;
+      }else{
+        cupHtml=`
+          <div class="card tournamentCard">
+            <h3>FONBET Кубок России</h3>
+            <p><b>${Career.cupStatusText()}</b></p>
+            <small>${cup?.path==="regions"?"Путь регионов":"Кубок России"}</small>
+          </div>`;
+      }
+
+      const cupHistory=(cup?.history||[]).slice().reverse().map(x=>
+        `<div class="tournamentEvent"><b>${x.stage}</b><span>${x.result}</span></div>`
+      ).join("");
+
+      const superText=supercup?.eligible
+        ? (supercup.status==="pending"?"Предстоит матч":supercup.result||"Завершён")
+        : `2026: ${supercup?.result||"Зенит — Спартак"}`;
+
+      const trophyHtml=s.trophies?.length
+        ? s.trophies.map(t=>`<div class="trophyRow">🏆 <b>${t}</b></div>`).join("")
+        : `<p class="muted">Трофеев пока нет.</p>`;
+
+      co.innerHTML=`
+        <h2>Турниры</h2>
+        <div class="tournamentGrid">
+          ${cupHtml}
+          <div class="card tournamentCard">
+            <h3>OLIMPBET Суперкубок России</h3>
+            <p><b>${superText}</b></p>
+            <small>${supercup?.eligible?"Вы участвуете в матче за трофей":"Ваш клуб не участвовал в Суперкубке-2026"}</small>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Кубок России — ваши матчи</h3>
+          ${cupHistory||'<p class="muted">Матчи ещё не сыграны.</p>'}
+        </div>
+
+        <div class="card">
+          <h3>Трофеи карьеры</h3>
+          ${trophyHtml}
+        </div>`;
+    }
+
+    else if(tab==="rules"){
+      co.innerHTML=`
+        <h2>Регламент</h2>
+
+        <div class="card">
+          <b>РПЛ</b>
+          <p>15–16 — прямой вылет. 13–14 — двухматчевые стыки.</p>
+        </div>
+
+        <div class="card">
+          <b>Первая лига</b>
+          <p>1–2 — прямой выход в РПЛ. 3–4 — стыковые матчи. Три последних места — вылет.</p>
+        </div>
+
+        <div class="card">
+          <b>Вторая лига А</b>
+          <p>«Золото» и «Серебро» сохраняются как отдельные группы игрового сезона.</p>
+        </div>
+
+        <div class="card">
+          <b>FONBET Кубок России 2026/27</b>
+          <p>Клубы РПЛ начинают с четырёх групп по 4 команды и играют по 6 матчей. Победа в основное время — 3 очка. При ничьей проводится серия пенальти: победителю 2 очка, проигравшему 1.</p>
+          <p>1–2 места группы продолжают путь по верхней сетке, 3-е место переходит в нижнюю сетку. Клубы Первой и Второй лиги играют через Путь регионов.</p>
+        </div>
+
+        <div class="card">
+          <b>OLIMPBET Суперкубок России</b>
+          <p>Один матч между чемпионом России и обладателем Кубка России. При ничьей после 90 минут — сразу серия пенальти.</p>
+        </div>`;
+    }
   },
-  playFixture(f){const h=DB.clubs.find(c=>c.id===f.home),a=DB.clubs.find(c=>c.id===f.away),userSide=f.home===Career.state.clubId?0:1;this.currentFixture=f;this.$("#hName").textContent=h.abbr;this.$("#aName").textContent=a.abbr;Logos.bind(this.$("#hLogo"),h);Logos.bind(this.$("#aLogo"),a);this.show("game");this.engine=new MatchEngine(this.$("#pitch"),sc=>this.finishMatch(sc));this.engine.start(h,a,userSide)},
-  finishMatch(sc){this.$("#result").style.display="flex";this.$("#resultText").textContent=`${this.engine.home.name} ${sc[0]} : ${sc[1]} ${this.engine.away.name}`;Career.applyFixture(this.currentFixture,sc[0],sc[1])},
+
+  playFixture(f){
+    const h=DB.clubs.find(c=>c.id===f.home);
+    const a=DB.clubs.find(c=>c.id===f.away);
+    const userSide=f.home===Career.state.clubId?0:1;
+
+    this.currentFixture=f;
+    this.$("#hName").textContent=h.abbr;
+    this.$("#aName").textContent=a.abbr;
+    this.$("#competitionLabel").textContent=Career.competitionName(f).toUpperCase();
+
+    Logos.bind(this.$("#hLogo"),h);
+    Logos.bind(this.$("#aLogo"),a);
+
+    this.show("game");
+    this.engine=new MatchEngine(this.$("#pitch"),sc=>this.finishMatch(sc));
+    this.engine.start(h,a,userSide);
+  },
+
+  finishMatch(sc){
+    const result=Career.applyFixture(this.currentFixture,sc[0],sc[1]);
+    this.$("#result").style.display="flex";
+    this.$("#resultText").textContent=result.display;
+  },
+
   updateHUD(e){
     this.$("#score").textContent=`${e.score[0]} : ${e.score[1]}`;
     let minute=e.displayMinute(),sec=0;

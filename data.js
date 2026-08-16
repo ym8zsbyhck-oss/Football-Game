@@ -23,3 +23,42 @@ window.DB.roleLabels = {
   AdvancedForward:"Продвинутый форвард",
   TargetForward:"Целевой форвард"
 };
+
+
+/* v1.1.0 — Russian Cup / Super Cup career competitions */
+window.DB.competitions = {
+  league:{name:"Чемпионат",short:"ЛИГА"},
+  cup:{name:"FONBET Кубок России",short:"КУБОК"},
+  supercup:{name:"OLIMPBET Суперкубок России",short:"СУПЕРКУБОК"}
+};
+
+window.DB.russianCup2026 = {
+  season:"2026/27",
+  rplGroups:{
+    A:["spartak","rubin","orenburg","rodina"],
+    B:["krasnodar","dynamo-moscow","akhmat","fakel"],
+    C:["zenit","baltika","krylya","dynamo-makhachkala"],
+    D:["lokomotiv","cska","rostov","akron"]
+  },
+  groupOrders:[15,35,55,85,105,125],
+  regionOrders:{2:22,3:42,4:62,5:82,6:112},
+  playoffOrders:{
+    upperR16:[155,165],
+    upperQF:[185,195],
+    upperSF:[215,225],
+    regionR16:175,
+    regionQF:205,
+    regionSF:235,
+    final:260
+  }
+};
+
+window.DB.superCup2026 = {
+  season:"2026",
+  champion:"zenit",
+  cupWinner:"spartak",
+  home:"zenit",
+  away:"spartak",
+  actualResult:"1:1 (4:2 пен.)",
+  actualWinner:"zenit"
+};
