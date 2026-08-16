@@ -66,7 +66,10 @@ window.MatchEngine = class {
       hasBall:false,decision:.2+Math.random()*.35,
       stamina:1,sent:false,
       state:"shape",
-      lane:i%3
+      lane:i%3,
+      contactCd:0,
+      tackleCd:0,
+      strength: .82 + ((i*13)%18)/100
     }));
   }
 
@@ -199,6 +202,8 @@ window.MatchEngine = class {
       return;
     }
     const p=this.players[this.controlled];
+    if((p.tackleCd||0)>0)return;
+    p.tackleCd=.42;
     const owner=this.ball.owner;
     if(owner===null)return;
     const o=this.players[owner];
@@ -318,6 +323,7 @@ window.MatchEngine = class {
       // Ball carrier advances but periodically makes a decision.
       const pGoalX=team===0?this.W:-0;
       let tx=p.x+dir*90,ty=p.y+(this.H/2-p.y)*.04;
+      const sep=this.separationForce(p); tx+=sep.x*34; ty+=sep.y*34;
       this.steer(p,tx,ty,dt,1.03);
       p.decision-=dt;
       if(p.decision<=0){
@@ -330,6 +336,8 @@ window.MatchEngine = class {
     }
 
     let target=this.desiredShape(p);
+    const sep=this.separationForce(p);
+    target.x+=sep.x*42; target.y+=sep.y*42;
     if(!own){
       if(p===presser){
         target={x:this.ball.x-dir*8,y:this.ball.y};
@@ -375,6 +383,128 @@ window.MatchEngine = class {
     this.ball.pickupLock=.12;this.ball.ignorePlayer=-1;
   }
 
+
+  separationForce(p){
+    let sx=0,sy=0,count=0;
+    for(const q of this.players){
+      if(q===p||q.sent)continue;
+      const dx=p.x-q.x,dy=p.y-q.y,d=Math.hypot(dx,dy);
+      const desired=p.r+q.r+5;
+      if(d>0 && d<desired*1.8){
+        const w=(desired*1.8-d)/(desired*1.8);
+        // Team-mates avoid one another earlier than opponents.
+        const mul=q.team===p.team?1.15:.55;
+        sx+=(dx/d)*w*mul;
+        sy+=(dy/d)*w*mul;
+        count++;
+      }
+    }
+    if(count){sx/=count;sy/=count}
+    return {x:sx,y:sy};
+  }
+
+  resolveContacts(dt){
+    // Positional correction + football contact logic.
+    for(let i=0;i<this.players.length;i++){
+      const a=this.players[i];
+      if(a.sent)continue;
+      for(let j=i+1;j<this.players.length;j++){
+        const b=this.players[j];
+        if(b.sent)continue;
+
+        let dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);
+        const minD=a.r+b.r+1;
+        if(d>=minD)continue;
+
+        // Stable normal even for exact overlap.
+        if(d<0.001){dx=(i%2?1:-1);dy=(j%2?0.35:-0.35);d=Math.hypot(dx,dy)}
+        const nx=dx/d,ny=dy/d;
+        const overlap=minD-d;
+
+        if(a.team===b.team){
+          // Team-mates never "fight" for the same pixel.
+          // Split the overlap and remove velocity into each other.
+          a.x-=nx*overlap*.52; a.y-=ny*overlap*.52;
+          b.x+=nx*overlap*.52; b.y+=ny*overlap*.52;
+
+          const rel=(b.vx-a.vx)*nx+(b.vy-a.vy)*ny;
+          if(rel<0){
+            const imp=-rel*.46;
+            a.vx-=nx*imp; a.vy-=ny*imp;
+            b.vx+=nx*imp; b.vy+=ny*imp;
+          }
+          continue;
+        }
+
+        const aOwn=this.ball.owner===i;
+        const bOwn=this.ball.owner===j;
+        const carrier=aOwn?a:(bOwn?b:null);
+        const defender=aOwn?b:(bOwn?a:null);
+        const carrierIdx=aOwn?i:(bOwn?j:-1);
+        const defenderIdx=aOwn?j:(bOwn?i:-1);
+
+        if(carrier && defender){
+          // One meaningful duel per short contact window, not every frame.
+          if((defender.contactCd||0)<=0){
+            defender.contactCd=.28;
+            const carrierSpeed=Math.hypot(carrier.vx,carrier.vy);
+            const defenderSpeed=Math.hypot(defender.vx,defender.vy);
+            const relStrength=(defender.strength||.9)-(carrier.strength||.9);
+            const tackleChance=Math.max(.20,Math.min(.78,
+              .44 + relStrength*.9 + defenderSpeed/900 - carrierSpeed/1300
+            ));
+
+            if(Math.random()<tackleChance){
+              // Successful duel: ball is knocked loose into playable space.
+              carrier.hasBall=false;
+              this.ball.owner=null;
+              this.ball.state="free";
+              this.ball.x=carrier.x+nx*(carrier.r+5);
+              this.ball.y=carrier.y+ny*(carrier.r+5);
+              this.ball.vx=nx*(125+defenderSpeed*.35);
+              this.ball.vy=ny*(125+defenderSpeed*.35);
+              this.ball.lastTeam=defender.team;
+              this.ball.ignorePlayer=defenderIdx;
+              this.ball.pickupLock=.10;
+            }else{
+              // Carrier survives contact and is nudged around the defender.
+              const tangentX=-ny,tangentY=nx;
+              const side=((carrier.y-defender.y)>=0?1:-1);
+              carrier.vx+=tangentX*side*70;
+              carrier.vy+=tangentY*side*70;
+            }
+          }
+
+          // Never allow both circles to remain occupying the same position.
+          const carrierMass=1.12, defenderMass=1.0;
+          if(aOwn){
+            a.x-=nx*overlap*.35/ carrierMass;
+            a.y-=ny*overlap*.35/ carrierMass;
+            b.x+=nx*overlap*.65/ defenderMass;
+            b.y+=ny*overlap*.65/ defenderMass;
+          }else{
+            a.x-=nx*overlap*.65/ defenderMass;
+            a.y-=ny*overlap*.65/ defenderMass;
+            b.x+=nx*overlap*.35/ carrierMass;
+            b.y+=ny*overlap*.35/ carrierMass;
+          }
+        }else{
+          // Neither has the ball: shoulder-to-shoulder avoidance, no jitter loop.
+          a.x-=nx*overlap*.50; a.y-=ny*overlap*.50;
+          b.x+=nx*overlap*.50; b.y+=ny*overlap*.50;
+
+          const rvx=b.vx-a.vx,rvy=b.vy-a.vy;
+          const closing=rvx*nx+rvy*ny;
+          if(closing<0){
+            const damp=-closing*.42;
+            a.vx-=nx*damp;a.vy-=ny*damp;
+            b.vx+=nx*damp;b.vy+=ny*damp;
+          }
+        }
+      }
+    }
+  }
+
   update(dt){
     const B={l:30,r:this.W-30,t:30,b:this.H-30};
 
@@ -406,11 +536,15 @@ window.MatchEngine = class {
     this.players.forEach((p,i)=>{
       if(p.sent)return;
       p.stamina=Math.max(.36,p.stamina-dt*(Math.hypot(p.vx,p.vy)>115?.0022:.0006));
+      p.contactCd=Math.max(0,(p.contactCd||0)-dt);
+      p.tackleCd=Math.max(0,(p.tackleCd||0)-dt);
       if(p.role==="GK")this.keeperAI(p,i,dt);
       else if(i!==this.controlled)this.ai(p,i,dt);
       p.x=Math.max(B.l+2,Math.min(B.r-2,p.x+p.vx*dt));
       p.y=Math.max(B.t+2,Math.min(B.b-2,p.y+p.vy*dt));
     });
+
+    this.resolveContacts(dt);
 
     if(this.ball.owner!==null){
       const p=this.players[this.ball.owner],dir=p.team===0?1:-1;
