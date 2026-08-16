@@ -8,6 +8,7 @@ window.App={
     this.$("#startCareer").onclick=()=>{if(!this.selected)return;Career.new(this.selected);this.openCareer()};
     this.$("#continueCareer").onclick=()=>{if(Career.load())this.openCareer()};
     if(localStorage.getItem(Career.saveKey))this.$("#continueCareer").style.display="block";
+    this.$("#saveCareerBtn")?.addEventListener("click",()=>{Career.save();alert("Карьера сохранена")});
     this.$("#back").onclick=()=>this.show("select");
     document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>this.renderCareer(b.dataset.tab));
     this.setupControls();
@@ -29,17 +30,50 @@ window.App={
   finishMatch(sc){this.$("#result").style.display="flex";this.$("#resultText").textContent=`${this.engine.home.name} ${sc[0]} : ${sc[1]} ${this.engine.away.name}`;Career.applyFixture(this.currentFixture,sc[0],sc[1])},
   updateHUD(e){
     this.$("#score").textContent=`${e.score[0]} : ${e.score[1]}`;
-    let m=Math.min(90,Math.floor(e.elapsed/e.duration*90)),s=Math.floor((e.elapsed/e.duration*90-m)*60);
-    this.$("#clock").textContent=String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+    let minute=e.displayMinute();
+    let sec=0;
+    if(e.halfElapsed<=e.realHalfDuration){
+      const base=e.half===1?0:45;
+      const exact=e.halfElapsed/e.realHalfDuration*45;
+      minute=Math.floor(base+exact);sec=Math.floor((exact-Math.floor(exact))*60);
+    }
+    this.$("#clock").textContent=String(minute).padStart(2,"0")+":"+String(sec).padStart(2,"0")+(e.addedMinutes&&e.halfElapsed>=e.realHalfDuration?` +${e.addedMinutes}`:"");
     this.$("#shoot").textContent=e.ball.owner===e.controlled?"УДАР":"ОТБОР";
-    const p=e.players[e.controlled],g=e.players.find(x=>x.team===e.userSide&&x.role==="GK");
+
+    const p=e.players[e.controlled];
+    const enemyOwner=(e.ball.owner!==null&&e.players[e.ball.owner]?.team!==e.userSide)?e.players[e.ball.owner]:null;
     if(p){
       this.$("#playerInfo").innerHTML=`<b>${p.name}</b><span>№ ${p.num}</span><small>Выносливость ${Math.round(p.stamina*100)}%</small><div class="stBar"><i style="width:${Math.round(p.stamina*100)}%"></i></div>`;
     }
-    if(g){
-      this.$("#gkInfo").innerHTML=`<b>${g.name}</b><span>№ ${g.num}</span><small>Вратарь • ${Math.round(g.stamina*100)}%</small><div class="stBar"><i style="width:${Math.round(g.stamina*100)}%"></i></div>`;
+    if(enemyOwner){
+      this.$("#gkInfo").style.opacity="1";
+      this.$("#gkInfo").innerHTML=`<b>${enemyOwner.name}</b><span>№ ${enemyOwner.num}</span><small>Соперник с мячом • ${Math.round(enemyOwner.stamina*100)}%</small><div class="stBar"><i style="width:${Math.round(enemyOwner.stamina*100)}%"></i></div>`;
+    }else{
+      this.$("#gkInfo").style.opacity=".35";
+      this.$("#gkInfo").innerHTML=`<b>Соперник</b><span>—</span><small>Ожидание владения</small><div class="stBar"><i style="width:0%"></i></div>`;
     }
   },
+  showHalftime(e){
+    const total=e.stats[0].possession+e.stats[1].possession||1;
+    const p0=Math.round(e.stats[0].possession/total*100),p1=100-p0;
+    this.$("#halfScore").textContent=`${e.home.abbr} ${e.score[0]} : ${e.score[1]} ${e.away.abbr}`;
+    this.$("#halfAdded").textContent=e.addedMinutes?`Добавлено: +${e.addedMinutes}`:"Без добавленного времени";
+    this.$("#halfStats").innerHTML=`
+      <div><span>Удары</span><b>${e.stats[0].shots} — ${e.stats[1].shots}</b></div>
+      <div><span>В створ</span><b>${e.stats[0].onTarget} — ${e.stats[1].onTarget}</b></div>
+      <div><span>Пасы</span><b>${e.stats[0].completed}/${e.stats[0].passes} — ${e.stats[1].completed}/${e.stats[1].passes}</b></div>
+      <div><span>Владение</span><b>${p0}% — ${p1}%</b></div>
+      <div><span>Отборы</span><b>${e.stats[0].tackles} — ${e.stats[1].tackles}</b></div>
+      <div><span>Угловые</span><b>${e.stats[0].corners} — ${e.stats[1].corners}</b></div>`;
+    const ev=e.events.filter(x=>x.half===1).slice(-6);
+    this.$("#halfEvents").innerHTML=ev.length?ev.map(x=>`<p><b>${x.minute}'</b> ${x.text}</p>`).join(""):"<p>Ключевых событий не было.</p>";
+    this.$("#halftime").style.display="flex";
+    this.$("#secondHalfBtn").onclick=()=>{
+      this.$("#halftime").style.display="none";
+      e.startSecondHalf();
+    };
+  },
+
   setupControls(){
     const c=this.$("#pitch"),joy=this.$("#joy"),kn=this.$("#knob");let pid=null,cx=0,cy=0;
     c.onpointerdown=e=>{if(e.clientX>innerWidth*.53)return;pid=e.pointerId;cx=e.clientX;cy=e.clientY;joy.style.display="block";joy.style.left=e.clientX-59+"px";joy.style.top=e.clientY-59+"px";c.setPointerCapture?.(e.pointerId)};

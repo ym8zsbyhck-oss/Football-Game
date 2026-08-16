@@ -16,8 +16,22 @@ window.Career = {
     this.state={clubId:club.id,league:club.league,group,stage:1,season:2026,round:1,standings,fixtures,lastResult:"",morale:78,confidence:72,tactics:{line:50,width:52,press:"balanced",build:"balanced"}};
     this.save(); return this.state;
   },
-  save(){if(this.state)localStorage.setItem(this.saveKey,JSON.stringify(this.state))},
-  load(){try{this.state=JSON.parse(localStorage.getItem(this.saveKey)||"null")}catch{} return this.state},
+  save(){
+    if(this.state){
+      this.state.savedAt=new Date().toISOString();
+      localStorage.setItem(this.saveKey,JSON.stringify(this.state));
+      localStorage.setItem(this.saveKey+"-backup",JSON.stringify(this.state));
+    }
+  },
+  load(){
+    try{
+      const raw=localStorage.getItem(this.saveKey)||localStorage.getItem(this.saveKey+"-backup")||"null";
+      this.state=JSON.parse(raw);
+    }catch{
+      try{this.state=JSON.parse(localStorage.getItem(this.saveKey+"-backup")||"null")}catch{}
+    }
+    return this.state;
+  },
   club(){return DB.clubs.find(c=>c.id===this.state.clubId)},
   sorted(){return [...this.state.standings].sort((a,b)=>b.pts-a.pts||((b.gf-b.ga)-(a.gf-a.ga))||b.gf-a.gf)},
   row(id){return this.state.standings.find(x=>x.id===id)},

@@ -6,3 +6,6 @@
 .leftInfo{left:var(--sl)}.rightInfo{right:calc(var(--sr) + 255px)}
 .playerInfo b{font-size:12px}.playerInfo span{font-size:11px;color:#dce9e1}.playerInfo small{grid-column:1/-1;color:#a9bdb1;font-size:9px}
 .stBar{grid-column:1/-1;height:4px;background:#ffffff18;border-radius:10px;overflow:hidden}.stBar i{display:block;height:100%;background:#fff;border-radius:10px}
+
+.halftimeCard{width:min(720px,88vw);text-align:left}.halfTop{text-align:center;padding-bottom:10px;border-bottom:1px solid #ffffff18}.halfTop small{color:#9fb3a6;font-weight:900;letter-spacing:.12em}.halfTop h2{font-size:38px;margin:5px 0}.halfTop span{font-size:11px;color:#aabeb1}
+.halfStats{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-top:12px}.halfStats>div{display:flex;justify-content:space-between;background:#ffffff07;border-radius:10px;padding:8px 10px}.halfStats span{color:#b6c9bd;font-size:12px}.halfStats b{font-size:13px}.halfEvents{margin-top:12px;background:#ffffff05;border-radius:12px;padding:10px}.halfEvents h3{margin:0 0 8px;font-size:14px}.halfEvents p{margin:5px 0;font-size:11px;color:#d9e6df}
