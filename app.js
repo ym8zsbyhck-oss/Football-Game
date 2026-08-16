@@ -33,21 +33,144 @@ window.App={
   $:s=>document.querySelector(s),
   show(id){document.querySelectorAll(".screen").forEach(x=>x.classList.toggle("active",x.id===id))},
   init(){
-    this.renderPicker();document.querySelectorAll("[data-league]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-league]").forEach(x=>x.classList.toggle("active",x===b));this.league=b.dataset.league;this.renderPicker()});
-    this.$("#startCareer").onclick=()=>{if(!this.selected)return;Career.new(this.selected);this.openCareer()};
-    this.$("#continueCareer").onclick=()=>{if(Career.load())this.openCareer()};
-    if(localStorage.getItem(Career.saveKey))this.$("#continueCareer").style.display="block";
-    this.$("#saveCareerBtn")?.addEventListener("click",()=>{Career.save();alert("Карьера сохранена")});
-    this.$("#back").onclick=()=>this.show("select");
+    Career.initStorage();
+
+    this.renderCareerSlots();
+    this.renderPicker();
+
+    document.querySelectorAll("[data-league]").forEach(b=>b.onclick=()=>{
+      document.querySelectorAll("[data-league]").forEach(x=>x.classList.toggle("active",x===b));
+      this.league=b.dataset.league;
+      this.renderPicker();
+    });
+
+    this.$("#startCareer").onclick=()=>{
+      if(!this.selected)return;
+
+      const slot=Career.firstFreeSlot();
+      if(!slot){
+        alert("Все 3 слота карьеры заняты. Удалите один из слотов, чтобы начать новую карьеру.");
+        return;
+      }
+
+      if(!Career.new(this.selected,slot)){
+        alert("Не удалось создать карьеру в выбранном слоте.");
+        return;
+      }
+
+      this.renderCareerSlots();
+      this.openCareer();
+    };
+
+    this.$("#saveCareerBtn")?.addEventListener("click",()=>{
+      Career.save();
+      this.renderCareerSlots();
+      alert(`Карьера сохранена • слот ${Career.currentSlot}`);
+    });
+
+    this.$("#back").onclick=()=>{
+      Career.save();
+      this.renderCareerSlots();
+      this.show("select");
+    };
+
     document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>this.renderCareer(b.dataset.tab));
     this.setupControls();
   },
+  renderCareerSlots(){
+    const box=this.$("#careerSlots");
+    if(!box)return;
+
+    const slots=Career.listSlots();
+    const used=slots.filter(x=>x.state).length;
+
+    if(this.$("#saveCounter")){
+      this.$("#saveCounter").textContent=`КАРЬЕРЫ ${used}/3`;
+    }
+
+    box.innerHTML=slots.map(({slot,state})=>{
+      if(!state){
+        return `
+          <div class="careerSlot empty">
+            <div class="slotNumber">СЛОТ ${slot}</div>
+            <div class="slotEmpty">Пусто</div>
+          </div>`;
+      }
+
+      const club=DB.clubs.find(c=>c.id===state.clubId);
+      const league=DB.leagues[state.league]?.name||state.league||"Лига";
+      const round=state.round||1;
+      const saved=state.savedAt
+        ? new Date(state.savedAt).toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit"})
+        : "";
+
+      return `
+        <div class="careerSlot filled" data-slot="${slot}">
+          <img class="slotLogo" data-club-logo="${club?.id||""}">
+          <div class="slotInfo">
+            <div class="slotNumber">СЛОТ ${slot}</div>
+            <b>${club?.name||state.clubId||"Карьера"}</b>
+            <small>${league} • тур ${round}${saved?` • ${saved}`:""}</small>
+          </div>
+          <div class="slotActions">
+            <button class="slotContinue" data-slot-open="${slot}">ИГРАТЬ</button>
+            <button class="slotDelete" data-slot-delete="${slot}" aria-label="Удалить слот">×</button>
+          </div>
+        </div>`;
+    }).join("");
+
+    box.querySelectorAll("[data-club-logo]").forEach(img=>{
+      const club=DB.clubs.find(c=>c.id===img.dataset.clubLogo);
+      if(club)Logos.bind(img,club);
+    });
+
+    box.querySelectorAll("[data-slot-open]").forEach(btn=>{
+      btn.onclick=e=>{
+        e.stopPropagation();
+        const slot=Number(btn.dataset.slotOpen);
+        if(Career.load(slot))this.openCareer();
+      };
+    });
+
+    box.querySelectorAll(".careerSlot.filled").forEach(card=>{
+      card.onclick=()=>{
+        const slot=Number(card.dataset.slot);
+        if(Career.load(slot))this.openCareer();
+      };
+    });
+
+    box.querySelectorAll("[data-slot-delete]").forEach(btn=>{
+      btn.onclick=e=>{
+        e.stopPropagation();
+        const slot=Number(btn.dataset.slotDelete);
+        const state=Career.readSlot(slot);
+        const club=DB.clubs.find(c=>c.id===state?.clubId);
+        if(!confirm(`Удалить карьеру из слота ${slot}${club?` (${club.name})`:""}?`))return;
+        Career.deleteSlot(slot);
+        this.renderCareerSlots();
+      };
+    });
+
+    const start=this.$("#startCareer");
+    if(start&&this.selected){
+      start.textContent=used>=3?"СЛОТОВ НЕТ":"НАЧАТЬ";
+    }
+  },
+
   pickerClubs(){return this.league==="fnl2"?DB.clubs.filter(c=>c.league==="fnl2"):DB.clubs.filter(c=>c.league===this.league)},
   renderPicker(){
     const box=this.$("#clubGrid");box.innerHTML="";
-    this.pickerClubs().forEach(c=>{let b=document.createElement("button");b.className="club";b.innerHTML=`<img><span>${c.name}</span><small>${c.group?(c.group==="gold"?"Золото":"Серебро")+" • ":""}РТГ ${c.rating}</small>`;Logos.bind(b.querySelector("img"),c);b.onclick=()=>{this.selected=c;document.querySelectorAll(".club").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");this.$("#selectedName").textContent=`${c.name} • рейтинг ${c.rating}`;Logos.bind(this.$("#selectedLogo"),c);this.$("#startCareer").disabled=false};box.appendChild(b)})
+    this.pickerClubs().forEach(c=>{let b=document.createElement("button");b.className="club";b.innerHTML=`<img><span>${c.name}</span><small>${c.group?(c.group==="gold"?"Золото":"Серебро")+" • ":""}РТГ ${c.rating}</small>`;Logos.bind(b.querySelector("img"),c);b.onclick=()=>{this.selected=c;document.querySelectorAll(".club").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");this.$("#selectedName").textContent=`${c.name} • рейтинг ${c.rating}`;Logos.bind(this.$("#selectedLogo"),c);this.$("#startCareer").disabled=false;this.$("#startCareer").textContent=Career.firstFreeSlot()?"НАЧАТЬ":"СЛОТОВ НЕТ"};box.appendChild(b)})
   },
-  openCareer(){const c=Career.club();this.$("#careerName").textContent=c.name;this.$("#careerLeague").textContent=DB.leagues[Career.state.league].name+(Career.state.group?` • ${Career.state.group==="gold"?"Золото":"Серебро"}`:"")+` • РТГ ${c.rating}`;Logos.bind(this.$("#careerLogo"),c);this.show("career");this.renderCareer("overview")},
+  openCareer(){
+    const c=Career.club();
+    this.$("#careerName").textContent=c.name;
+    this.$("#careerLeague").textContent=DB.leagues[Career.state.league].name+(Career.state.group?` • ${Career.state.group==="gold"?"Золото":"Серебро"}`:"")+` • РТГ ${c.rating}`;
+    if(this.$("#careerTopBrand"))this.$("#careerTopBrand").textContent=`КАРЬЕРА • СЛОТ ${Career.currentSlot}`;
+    Logos.bind(this.$("#careerLogo"),c);
+    this.show("career");
+    this.renderCareer("overview");
+  },
   renderCareer(tab){
     document.querySelectorAll("[data-tab]").forEach(x=>x.classList.toggle("active",x.dataset.tab===tab));
     const s=Career.state,c=Career.club(),co=this.$("#content");
@@ -85,7 +208,7 @@ window.App={
 
         <div class="card">
           <b>ИИ матча</b>
-          <p>v1.1.3 Team IQ: рейтинг клуба влияет на решения, прессинг, передачи, первый приём, забегания, завершение и вратаря.</p>
+          <p>v1.1.4 Team IQ: рейтинг клуба влияет на решения, прессинг, передачи, первый приём, забегания, завершение и вратаря.</p>
         </div>`;
 
       this.$("#play")?.addEventListener("click",()=>this.playFixture(f));

@@ -1,7 +1,94 @@
 
 window.Career = {
+  // Legacy single-save key from v1.1.3 and earlier.
   saveKey:"rfc-v06-career",
+  slotPrefix:"rfc-career-slot-",
+  migrationKey:"rfc-career-3slots-migrated",
+  maxSlots:3,
+  currentSlot:null,
   state:null,
+
+  slotKey(slot){return `${this.slotPrefix}${slot}`},
+  slotBackupKey(slot){return `${this.slotPrefix}${slot}-backup`},
+
+  validSlot(slot){
+    slot=Number(slot);
+    return Number.isInteger(slot)&&slot>=1&&slot<=this.maxSlots;
+  },
+
+  readSlot(slot){
+    if(!this.validSlot(slot))return null;
+    let value=null;
+    try{
+      value=JSON.parse(localStorage.getItem(this.slotKey(slot))||"null");
+    }catch{}
+    if(value)return value;
+
+    try{
+      value=JSON.parse(localStorage.getItem(this.slotBackupKey(slot))||"null");
+    }catch{}
+    return value||null;
+  },
+
+  listSlots(){
+    const out=[];
+    for(let slot=1;slot<=this.maxSlots;slot++){
+      const state=this.readSlot(slot);
+      out.push({slot,state});
+    }
+    return out;
+  },
+
+  hasAnySave(){
+    return this.listSlots().some(x=>!!x.state);
+  },
+
+  firstFreeSlot(){
+    const free=this.listSlots().find(x=>!x.state);
+    return free?.slot||null;
+  },
+
+  deleteSlot(slot){
+    if(!this.validSlot(slot))return false;
+    localStorage.removeItem(this.slotKey(slot));
+    localStorage.removeItem(this.slotBackupKey(slot));
+
+    if(this.currentSlot===Number(slot)){
+      this.currentSlot=null;
+      this.state=null;
+    }
+    return true;
+  },
+
+  migrateLegacySave(){
+    if(localStorage.getItem(this.migrationKey)==="1")return;
+
+    // If slot 1 is already used, do not overwrite it.
+    if(!this.readSlot(1)){
+      let legacy=null;
+      try{
+        legacy=JSON.parse(
+          localStorage.getItem(this.saveKey)||
+          localStorage.getItem(this.saveKey+"-backup")||
+          "null"
+        );
+      }catch{}
+
+      if(legacy){
+        legacy.version="1.1.4";
+        legacy.savedAt=legacy.savedAt||new Date().toISOString();
+        localStorage.setItem(this.slotKey(1),JSON.stringify(legacy));
+        localStorage.setItem(this.slotBackupKey(1),JSON.stringify(legacy));
+      }
+    }
+
+    localStorage.setItem(this.migrationKey,"1");
+  },
+
+  initStorage(){
+    this.migrateLegacySave();
+    return this.listSlots();
+  },
 
   leagueClubs(league,group=null){
     return DB.clubs.filter(c=>c.league===league && (!group || c.group===group));
@@ -41,13 +128,19 @@ window.Career = {
     return fixtures;
   },
 
-  new(club){
+  new(club,slot=null){
+    slot=slot||this.firstFreeSlot();
+    if(!this.validSlot(slot))return null;
+    if(this.readSlot(slot))return null;
+
+    this.currentSlot=Number(slot);
+
     const group=club.league==="fnl2"?(club.group||"gold"):null;
     const pool=this.leagueClubs(club.league,group);
     const standings=pool.map(c=>({id:c.id,p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}));
 
     this.state={
-      version:"1.1.0",
+      version:"1.1.4",
       clubId:club.id,
       league:club.league,
       group,
@@ -74,7 +167,7 @@ window.Career = {
     const club=this.clubById(this.state.clubId);
     if(!club)return this.state;
 
-    this.state.version="1.1.0";
+    this.state.version="1.1.4";
     if(!Array.isArray(this.state.trophies))this.state.trophies=[];
 
     if(!Array.isArray(this.state.fixtures)||!this.state.fixtures.length){
@@ -95,21 +188,49 @@ window.Career = {
   },
 
   save(){
-    if(this.state){
-      this.state.savedAt=new Date().toISOString();
-      localStorage.setItem(this.saveKey,JSON.stringify(this.state));
-      localStorage.setItem(this.saveKey+"-backup",JSON.stringify(this.state));
+    if(!this.state)return false;
+
+    if(!this.validSlot(this.currentSlot)){
+      this.currentSlot=this.firstFreeSlot()||1;
     }
+
+    this.state.version="1.1.4";
+    this.state.savedAt=new Date().toISOString();
+    this.state.saveSlot=this.currentSlot;
+
+    const raw=JSON.stringify(this.state);
+    localStorage.setItem(this.slotKey(this.currentSlot),raw);
+    localStorage.setItem(this.slotBackupKey(this.currentSlot),raw);
+    return true;
   },
 
-  load(){
-    try{
-      const raw=localStorage.getItem(this.saveKey)||localStorage.getItem(this.saveKey+"-backup")||"null";
-      this.state=JSON.parse(raw);
-    }catch{
-      try{this.state=JSON.parse(localStorage.getItem(this.saveKey+"-backup")||"null")}catch{}
+  load(slot=null){
+    this.initStorage();
+
+    if(slot==null){
+      const first=this.listSlots().find(x=>x.state);
+      if(!first){
+        this.state=null;
+        this.currentSlot=null;
+        return null;
+      }
+      slot=first.slot;
     }
+
+    if(!this.validSlot(slot))return null;
+
+    this.state=this.readSlot(slot);
+    if(!this.state){
+      this.currentSlot=null;
+      return null;
+    }
+
+    this.currentSlot=Number(slot);
     this.migrate();
+    this.state.saveSlot=this.currentSlot;
+
+    // Re-save migrated structures only into the slot that was opened.
+    this.save();
     return this.state;
   },
 
