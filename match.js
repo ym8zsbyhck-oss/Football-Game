@@ -20,10 +20,25 @@ window.MatchEngine = class {
   }
 
   resize(){
-    this.W=innerWidth; this.H=innerHeight;
+    const oldW=this.W||innerWidth, oldH=this.H||innerHeight;
+    const vv=window.visualViewport;
+    const newW=Math.round(vv?vv.width:innerWidth);
+    const newH=Math.round(vv?vv.height:innerHeight);
+    this.W=newW;this.H=newH;
     const d=Math.min(devicePixelRatio||1,2);
-    this.canvas.width=this.W*d; this.canvas.height=this.H*d;
+    this.canvas.width=this.W*d;this.canvas.height=this.H*d;
+    this.canvas.style.width=this.W+"px";this.canvas.style.height=this.H+"px";
     this.ctx.setTransform(d,0,0,d,0,0);
+
+    if(this.players?.length && oldW>0 && oldH>0 && (oldW!==newW || oldH!==newH)){
+      const sx=newW/oldW, sy=newH/oldH;
+      this.players.forEach(p=>{
+        p.x*=sx;p.y*=sy;p.homeX*=sx;p.homeY*=sy;
+      });
+      if(this.ball){
+        this.ball.x*=sx;this.ball.y*=sy;
+      }
+    }
   }
 
   teamNames(team){

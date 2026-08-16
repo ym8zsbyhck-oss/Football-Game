@@ -1,4 +1,33 @@
 
+window.SafariViewport = {
+  apply(){
+    const vv=window.visualViewport;
+    const h=Math.max(240, Math.round(vv ? vv.height : window.innerHeight));
+    document.documentElement.style.setProperty("--app-h", h+"px");
+
+    // Scale UI slightly if Safari chrome leaves less than the usual landscape height.
+    const scale=Math.max(.84,Math.min(1,h/402));
+    document.documentElement.style.setProperty("--ui-scale", String(scale));
+
+    if(window.App?.engine){
+      window.App.engine.resize();
+    }
+  },
+  init(){
+    this.apply();
+    window.addEventListener("resize",()=>this.apply(),{passive:true});
+    window.addEventListener("orientationchange",()=>{
+      setTimeout(()=>this.apply(),80);
+      setTimeout(()=>this.apply(),350);
+    },{passive:true});
+    if(window.visualViewport){
+      visualViewport.addEventListener("resize",()=>this.apply(),{passive:true});
+      visualViewport.addEventListener("scroll",()=>this.apply(),{passive:true});
+    }
+  }
+};
+
+
 window.App={
   league:"rpl",selected:null,engine:null,
   $:s=>document.querySelector(s),
@@ -65,8 +94,13 @@ window.App={
       <div><span>Владение</span><b>${p0}% — ${p1}%</b></div>
       <div><span>Отборы</span><b>${e.stats[0].tackles} — ${e.stats[1].tackles}</b></div>
       <div><span>Угловые</span><b>${e.stats[0].corners} — ${e.stats[1].corners}</b></div>`;
-    const ev=e.events.filter(x=>x.half===1).slice(-6);
-    this.$("#halfEvents").innerHTML=ev.length?ev.map(x=>`<p><b>${x.minute}'</b> ${x.text}</p>`).join(""):"<p>Ключевых событий не было.</p>";
+    const allEvents=e.events.filter(x=>x.half===1);
+    const important=allEvents.filter(x=>x.type==="Гол"||x.type==="Карточка"||x.type==="Пенальти");
+    const shots=allEvents.filter(x=>x.type==="Удар").slice(-5);
+    const ev=[...important,...shots].sort((a,b)=>a.minute-b.minute);
+    this.$("#halfEvents").innerHTML=ev.length
+      ? ev.map(x=>`<p><b>${x.minute}'</b> ${x.text}</p>`).join("")
+      : "<p>Ключевых событий не было.</p>";
     this.$("#halftime").style.display="flex";
     this.$("#secondHalfBtn").onclick=()=>{
       this.$("#halftime").style.display="none";
@@ -93,4 +127,12 @@ window.App={
     this.$("#continue").onclick=()=>{this.$("#result").style.display="none";this.openCareer()}
   }
 };
-addEventListener("DOMContentLoaded",()=>App.init());
+addEventListener("DOMContentLoaded",()=>{SafariViewport.init();App.init();});
+
+
+document.addEventListener("gesturestart",e=>e.preventDefault(),{passive:false});
+document.addEventListener("gesturechange",e=>e.preventDefault(),{passive:false});
+document.addEventListener("gestureend",e=>e.preventDefault(),{passive:false});
+document.addEventListener("touchmove",e=>{
+  if(document.querySelector("#game.active")) e.preventDefault();
+},{passive:false});
