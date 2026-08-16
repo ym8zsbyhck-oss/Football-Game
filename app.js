@@ -27,13 +27,34 @@ window.App={
   },
   playFixture(f){const h=DB.clubs.find(c=>c.id===f.home),a=DB.clubs.find(c=>c.id===f.away),userSide=f.home===Career.state.clubId?0:1;this.currentFixture=f;this.$("#hName").textContent=h.abbr;this.$("#aName").textContent=a.abbr;Logos.bind(this.$("#hLogo"),h);Logos.bind(this.$("#aLogo"),a);this.show("game");this.engine=new MatchEngine(this.$("#pitch"),sc=>this.finishMatch(sc));this.engine.start(h,a,userSide)},
   finishMatch(sc){this.$("#result").style.display="flex";this.$("#resultText").textContent=`${this.engine.home.name} ${sc[0]} : ${sc[1]} ${this.engine.away.name}`;Career.applyFixture(this.currentFixture,sc[0],sc[1])},
-  updateHUD(e){this.$("#score").textContent=`${e.score[0]} : ${e.score[1]}`;let m=Math.min(90,Math.floor(e.elapsed/e.duration*90)),s=Math.floor((e.elapsed/e.duration*90-m)*60);this.$("#clock").textContent=String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");this.$("#shoot").textContent=e.ball.owner===e.controlled?"УДАР":"ОТБОР"},
+  updateHUD(e){
+    this.$("#score").textContent=`${e.score[0]} : ${e.score[1]}`;
+    let m=Math.min(90,Math.floor(e.elapsed/e.duration*90)),s=Math.floor((e.elapsed/e.duration*90-m)*60);
+    this.$("#clock").textContent=String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+    this.$("#shoot").textContent=e.ball.owner===e.controlled?"УДАР":"ОТБОР";
+    const p=e.players[e.controlled],g=e.players.find(x=>x.team===e.userSide&&x.role==="GK");
+    if(p){
+      this.$("#playerInfo").innerHTML=`<b>${p.name}</b><span>№ ${p.num}</span><small>Выносливость ${Math.round(p.stamina*100)}%</small><div class="stBar"><i style="width:${Math.round(p.stamina*100)}%"></i></div>`;
+    }
+    if(g){
+      this.$("#gkInfo").innerHTML=`<b>${g.name}</b><span>№ ${g.num}</span><small>Вратарь • ${Math.round(g.stamina*100)}%</small><div class="stBar"><i style="width:${Math.round(g.stamina*100)}%"></i></div>`;
+    }
+  },
   setupControls(){
     const c=this.$("#pitch"),joy=this.$("#joy"),kn=this.$("#knob");let pid=null,cx=0,cy=0;
     c.onpointerdown=e=>{if(e.clientX>innerWidth*.53)return;pid=e.pointerId;cx=e.clientX;cy=e.clientY;joy.style.display="block";joy.style.left=e.clientX-59+"px";joy.style.top=e.clientY-59+"px";c.setPointerCapture?.(e.pointerId)};
     c.onpointermove=e=>{if(e.pointerId!==pid||!this.engine)return;let dx=e.clientX-cx,dy=e.clientY-cy,l=Math.hypot(dx,dy),m=41;if(l>m){dx*=m/l;dy*=m/l}this.engine.joy.x=dx/m;this.engine.joy.y=dy/m;kn.style.transform=`translate(${dx}px,${dy}px)`};
     const end=e=>{if(e.pointerId!==pid)return;pid=null;if(this.engine){this.engine.joy.x=0;this.engine.joy.y=0}joy.style.display="none";kn.style.transform=""};c.onpointerup=end;c.onpointercancel=end;
-    this.$("#pass").onpointerdown=()=>this.engine?.pass(false);this.$("#through").onpointerdown=()=>this.engine?.pass(true);this.$("#shoot").onpointerdown=()=>this.engine?.shootOrTackle();this.$("#switch").onpointerdown=()=>this.engine?.switch();this.$("#sprint").onpointerdown=()=>{if(this.engine)this.engine.sprint=true};["pointerup","pointerleave","pointercancel"].forEach(x=>this.$("#sprint").addEventListener(x,()=>{if(this.engine)this.engine.sprint=false}));
+    this.$("#pass").onpointerdown=()=>this.engine?.startPassCharge();
+    this.$("#pass").onpointerup=()=>this.engine?.releasePass(false);
+    this.$("#pass").onpointercancel=()=>this.engine?.releasePass(false);
+    this.$("#through").onpointerdown=()=>this.engine?.startPassCharge();
+    this.$("#through").onpointerup=()=>this.engine?.releasePass(true);
+    this.$("#through").onpointercancel=()=>this.engine?.releasePass(true);
+    this.$("#shoot").onpointerdown=()=>{if(!this.engine)return;if(this.engine.ball.owner===this.engine.controlled)this.engine.startShotCharge();else this.engine.tackle()};
+    this.$("#shoot").onpointerup=()=>this.engine?.releaseShot();
+    this.$("#shoot").onpointercancel=()=>this.engine?.releaseShot();
+    this.$("#switch").onpointerdown=()=>this.engine?.switch();this.$("#sprint").onpointerdown=()=>{if(this.engine)this.engine.sprint=true};["pointerup","pointerleave","pointercancel"].forEach(x=>this.$("#sprint").addEventListener(x,()=>{if(this.engine)this.engine.sprint=false}));
     this.$("#pause").onclick=()=>{if(!this.engine)return;this.engine.paused=true;this.$("#pauseOverlay").style.display="flex"};this.$("#resume").onclick=()=>{this.$("#pauseOverlay").style.display="none";this.engine.paused=false;this.engine.last=performance.now();requestAnimationFrame(t=>this.engine.loop(t))};
     this.$("#continue").onclick=()=>{this.$("#result").style.display="none";this.openCareer()}
   }
