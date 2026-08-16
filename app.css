@@ -532,3 +532,6 @@ canvas,
   .broadcastBug img{width:78px}
   .broadcastBug{right:max(calc(env(safe-area-inset-right) + 4px),16px)}
 }
+
+/* v1.0 micro-animation polish */
+.playerInfo small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.act:active{transform:scale(.94);filter:brightness(1.12)}.broadcastBug{z-index:14}
