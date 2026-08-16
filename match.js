@@ -13,7 +13,7 @@ window.MatchEngine = class {
     this.stats=this.newStats();this.events=[];
     this.lastPossessionTeam=-1;this.counterPressTeam=-1;this.counterPressTimer=0;
     this.teamShotCooldown=[0,0];this.teamPhases=["DEFENSIVE_SHAPE","DEFENSIVE_SHAPE"];
-    this.shotSerial=0;this.lastGoalTime=-999;
+    this.shotSerial=0;this.lastGoalTime=-999;this.openingKickoffTeam=0;
   }
 
   newStats(){
@@ -95,12 +95,12 @@ window.MatchEngine = class {
     this.running=true;this.paused=false;this.stats=this.newStats();this.events=[];
     this.lastPossessionTeam=-1;this.counterPressTeam=-1;this.counterPressTimer=0;
     this.teamShotCooldown=[0,0];this.teamPhases=["DEFENSIVE_SHAPE","DEFENSIVE_SHAPE"];
-    this.resize();this.kickoff(0);this.last=performance.now();
+    this.openingKickoffTeam=0;this.resize();this.kickoff(this.openingKickoffTeam);this.last=performance.now();
     requestAnimationFrame(t=>this.loop(t));
   }
 
   form(side){
-    const left=[[.07,.50],[.25,.50],[.40,.31],[.40,.69],[.57,.50]];
+    const left=[[.07,.50],[.24,.50],[.36,.30],[.36,.70],[.46,.50]];
     const roles=["GK","DEF","CM","W","ST"],nums=[1,4,6,10,9],names=this.teamNames(side),fc=this.rolePlan(side);
     return left.map((v,i)=>{
       const x=side?1-v[0]:v[0],club=side===0?this.home:this.away,q=((club?.rating||72)-68)/18;
@@ -113,29 +113,93 @@ window.MatchEngine = class {
         facingX:side===0?1:-1,facingY:0,turnAmount:0,touchTimer:.08+Math.random()*.16,
         touchPulse:0,dribbleLead:0,runSeed:Math.random()*6.28,runTimer:.2+Math.random()*.6,
         lowUrgency:false,keeperState:"SET",keeperReaction:0,keeperTargetY:this.H/2,
-        lastShotSeen:-1,diveDir:0
+        lastShotSeen:-1,diveDir:0,keeperMissShotId:-1
       };
     });
   }
 
   kickoff(team){
-    this.players=[...this.form(0),...this.form(1)];
-    this.kickoffTeam=team;this.phase="kickoff";this.kickoffTimer=.55;
-    this.ball={x:this.W/2,y:this.H/2,vx:0,vy:0,r:6,owner:null,lastTeam:team,state:"dead",
+    const oldPlayers=this.players?.length===10?this.players:null;
+    const freshPlayers=[...this.form(0),...this.form(1)];
+    if(oldPlayers){
+      freshPlayers.forEach((p,i)=>{
+        p.stamina=oldPlayers[i]?.stamina??1;
+      });
+    }
+    this.players=freshPlayers;
+    this.kickoffTeam=team;
+    this.phase="kickoff";
+    this.kickoffTimer=.78;
+    this.restart=null;
+    this.passCharging=false;
+    this.shotCharging=false;
+    this.pressAssist=false;
+    this.secondPress=false;
+    this.counterPressTimer=0;
+    this.counterPressTeam=-1;
+    this.teamPhases=["DEFENSIVE_SHAPE","DEFENSIVE_SHAPE"];
+
+    this.ball={
+      x:this.W/2,y:this.H/2,vx:0,vy:0,r:6,owner:null,lastTeam:team,state:"dead",
       pickupLock:0,ignorePlayer:-1,lastPassTeam:-1,lastPassTarget:-1,
-      spin:0,spinSpeed:0,shotId:0,isShot:false,shotTeam:-1};
-    const ids=team===0?[3,4]:[8,9],dir=team===0?-1:1;
-    this.players[ids[0]].x=this.W/2+dir*18;this.players[ids[0]].y=this.H/2;
-    this.players[ids[1]].x=this.W/2+dir*60;this.players[ids[1]].y=this.H/2+34;
-    this.controlled=this.nearestUser();this.lastPossessionTeam=-1;
+      spin:0,spinSpeed:0,shotId:0,isShot:false,shotTeam:-1
+    };
+
+    // At kick-off only the team taking it may stand at the ball.
+    // Everyone else is pushed outside the centre circle and remains in own half.
+    const dir=team===0?1:-1;
+    const passer=team===0?4:9;      // striker
+    const support=team===0?3:8;     // playmaker / wide player
+
+    // Kicking team: striker just behind centre line, support deeper in own half.
+    this.players[passer].x=this.W/2-dir*16;
+    this.players[passer].y=this.H/2;
+    this.players[support].x=this.W/2-dir*74;
+    this.players[support].y=this.H/2+34;
+
+    // Non-kicking team's nearest forward must stay outside centre circle.
+    const defendingTeam=1-team;
+    const oppST=defendingTeam===0?4:9;
+    const oppW=defendingTeam===0?3:8;
+    const oppDir=defendingTeam===0?1:-1;
+    this.players[oppST].x=this.W/2-oppDir*82;
+    this.players[oppST].y=this.H/2;
+    this.players[oppW].x=this.W/2-oppDir*104;
+    this.players[oppW].y=this.H/2+(defendingTeam===0?58:-58);
+
+    // Zero all movement/action remnants after goal or half-time.
+    for(const p of this.players){
+      p.vx=0;p.vy=0;p.hasBall=false;p.contactCd=0;
+      p.action="idle";p.actionTimer=0;p.contactFlash=0;
+      p.touchPulse=0;p.touchTimer=.10+Math.random()*.10;
+    }
+
+    this.controlled=this.nearestUser();
+    this.lastPossessionTeam=-1;
   }
 
   beginKickoff(){
-    const team=this.kickoffTeam,passer=team===0?3:8,receiver=team===0?4:9,q=this.players[receiver];
-    this.ball.state="free";this.ball.x=this.W/2;this.ball.y=this.H/2;
+    const team=this.kickoffTeam;
+    const passer=team===0?4:9;
+    const receiver=team===0?3:8;
+    const p=this.players[passer],q=this.players[receiver];
+
+    this.ball.state="free";
+    this.ball.x=this.W/2;
+    this.ball.y=this.H/2;
+
     const dx=q.x-this.ball.x,dy=q.y-this.ball.y,l=Math.hypot(dx,dy)||1;
-    this.ball.vx=dx/l*220;this.ball.vy=dy/l*220;this.ball.lastTeam=team;
-    this.ball.spinSpeed=8;this.ball.ignorePlayer=passer;this.ball.pickupLock=.2;this.phase="open";
+    this.ball.vx=dx/l*205;
+    this.ball.vy=dy/l*205;
+    this.ball.lastTeam=team;
+    this.ball.spinSpeed=7;
+    this.ball.ignorePlayer=passer;
+    this.ball.pickupLock=.18;
+    this.ball.lastPassTeam=team;
+    this.ball.lastPassTarget=receiver;
+
+    p.action="passKick";p.actionTimer=.18;
+    this.phase="open";
   }
 
   nearest(team,allowGK=false){
@@ -191,21 +255,7 @@ window.MatchEngine = class {
     if(this.ball.pickupLock>0&&i===this.ball.ignorePlayer)return false;
     const speed=Math.hypot(this.ball.vx,this.ball.vy);
 
-    if(this.ball.isShot && p.role!=="GK"){
-      // A shot is never controlled like a pass.
-      if(p.team===this.ball.shotTeam)return false;
-
-      const incoming=Math.atan2(this.ball.vy,this.ball.vx);
-      const deflect=incoming+(Math.random()-.5)*1.05;
-      const out=Math.max(150,speed*(.28+Math.random()*.20));
-      this.ball.vx=Math.cos(deflect)*out;
-      this.ball.vy=Math.sin(deflect)*out;
-      this.ball.isShot=false;
-      this.ball.lastTeam=p.team;
-      this.ball.spinSpeed*=.72;
-      p.action="shotBlock";p.actionTimer=.18;p.contactFlash=.13;
-      return false;
-    }
+    if(this.ball.isShot && p.role!=="GK")return false;
     if(!forceKeeper&&p.role!=="GK"&&speed>115){
       const quality=this.firstTouchQuality(p,speed);
       if(Math.random()>quality){
@@ -325,15 +375,13 @@ window.MatchEngine = class {
     const team=p.team;
     const gx=team===0?this.W+24:-24;
     const gt=this.H*.39,gb=this.H*.61;
-
-    // Keep the centre of the ball just inside the post.
     const margin=this.ball.r+2;
 
     const keeper=this.players.find(q=>q.team!==team&&q.role==="GK"&&!q.sent);
     const keeperRating=((team===0?this.away.rating:this.home.rating)||72);
 
     const candidates=[];
-    const steps=24;
+    const steps=26;
     for(let n=0;n<=steps;n++){
       candidates.push((gt+margin)+(gb-gt-margin*2)*(n/steps));
     }
@@ -343,35 +391,28 @@ window.MatchEngine = class {
     let bestMeta=null;
 
     for(const y of candidates){
-      const lane=this.shotLaneAnalysis(p,gx,y);
-
       let keeperGap=120;
       if(keeper){
         const distToGoal=Math.hypot(gx-p.x,y-p.y);
-        const travel=distToGoal/500;
-        const predictedY=keeper.y+keeper.vy*Math.min(.48,travel)*.32;
-
-        // For targeting we care about the keeper's current body/short reaction coverage,
-        // not his maximum dive reach. The Keeper Brain can still save the shot afterwards.
-        const targetingCoverage=keeper.r+6+Math.max(0,keeperRating-70)*.18;
+        const travel=distToGoal/520;
+        const predictedY=keeper.y+keeper.vy*Math.min(.40,travel)*.26;
+        const targetingCoverage=keeper.r+4+Math.max(0,keeperRating-70)*.12;
         keeperGap=Math.abs(y-predictedY)-targetingCoverage;
       }
 
       const insidePost=Math.min(y-(gt+margin),(gb-margin)-y);
-      const farPostBonus=(p.y<this.H/2 ? y>this.H/2 : y<this.H/2)?24:0;
-      const cornerBonus=Math.abs(y-this.H/2)/(gb-gt)*18;
+      const farPostBonus=(p.y<this.H/2 ? y>this.H/2 : y<this.H/2)?25:0;
+      const cornerBonus=Math.abs(y-this.H/2)/(gb-gt)*24;
 
-      let score =
-        lane.minGap*8.5 +
-        keeperGap*10.5 +
-        insidePost*.25 +
+      const score=
+        keeperGap*12.0 +
+        insidePost*.18 +
         farPostBonus +
-        cornerBonus -
-        lane.hardBlocks*7000 +
+        cornerBonus +
         (Math.random()-.5)*2;
 
       if(score>bestScore){
-        bestScore=score;bestY=y;bestMeta={lane,keeperGap};
+        bestScore=score;bestY=y;bestMeta={keeperGap};
       }
     }
 
@@ -411,7 +452,7 @@ window.MatchEngine = class {
   attemptDuel(defenderIdx,carrierIdx,explicit=false){
     const d=this.players[defenderIdx],c=this.players[carrierIdx];
     if(!d||!c||d.sent||c.sent||d.contactCd>0)return false;
-    d.contactCd=.34;c.contactCd=Math.max(c.contactCd,.14);d.action="contact";d.actionTimer=.16;c.contactFlash=.13;
+    d.contactCd=explicit?.34:.62;c.contactCd=Math.max(c.contactCd,.14);d.action="contact";d.actionTimer=.16;c.contactFlash=.13;
     if(Math.random()<this.duelChance(d,c,explicit)){
       c.hasBall=false;this.ball.owner=null;this.ball.state="free";
       const vx=this.ball.x-d.x,vy=this.ball.y-d.y,l=Math.hypot(vx,vy)||1,side=Math.random()<.5?-1:1;
@@ -503,17 +544,17 @@ window.MatchEngine = class {
     const oneVOne=oppOwner&&(p.team===0?oppOwner.x<this.W*.29:oppOwner.x>this.W*.71)&&Math.abs(oppOwner.y-this.H/2)<this.H*.27;
 
     if(this.ball.shotId!==p.lastShotSeen&&cross){
-      p.lastShotSeen=this.ball.shotId;p.keeperReaction=Math.max(.055,.20-(rating-68)*.0065);
+      p.lastShotSeen=this.ball.shotId;p.keeperReaction=Math.max(.075,.27-(rating-68)*.0052);
       p.keeperTargetY=Math.max(this.H*.36,Math.min(this.H*.64,cross.y));
       p.keeperState="READY";p.action="keeperReady";p.actionTimer=.25;
     }
 
     if(oneVOne){
-      p.keeperState="1V1";const dir=p.team===0?1:-1,depth=Math.min(76,Math.max(28,Math.abs(oppOwner.x-gx)*.28));
-      this.steer(p,gx+dir*depth,Math.max(this.H*.37,Math.min(this.H*.63,oppOwner.y)),dt,1.18+(rating-72)*.006,1);
+      p.keeperState="1V1";const dir=p.team===0?1:-1,depth=Math.min(50,Math.max(18,Math.abs(oppOwner.x-gx)*.18));
+      this.steer(p,gx+dir*depth,Math.max(this.H*.38,Math.min(this.H*.62,oppOwner.y)),dt,1.04+(rating-72)*.004,1);
     }else if(cross){
       if(p.keeperReaction>0){p.keeperReaction-=dt;p.keeperState="READY";this.steer(p,gx,p.keeperTargetY,dt,.72,1)}
-      else{p.keeperState="DIVE";p.diveDir=Math.sign(p.keeperTargetY-p.y);this.steer(p,gx+(p.team===0?12:-12),p.keeperTargetY,dt,1.65+(rating-72)*.012,1)}
+      else{p.keeperState="DIVE";p.diveDir=Math.sign(p.keeperTargetY-p.y);this.steer(p,gx+(p.team===0?9:-9),p.keeperTargetY,dt,1.22+(rating-72)*.006,1)}
     }else{
       const danger=p.team===0?this.ball.x<this.W*.34:this.ball.x>this.W*.66;
       p.keeperState=danger?"ADJUST":"SET";let tx=gx,ty=Math.max(this.H*.38,Math.min(this.H*.62,this.ball.y));
@@ -545,17 +586,34 @@ window.MatchEngine = class {
     for(let i=0;i<this.players.length;i++){
       const p=this.players[i];if(p.role!=="GK"||p.sent)continue;
       const rating=(p.team===0?this.home.rating:this.away.rating)||72;
-      const reach=p.r+this.ball.r+(p.keeperState==="DIVE"?14:(p.keeperState==="1V1"?7:3));
+      const reach=p.r+this.ball.r+(p.keeperState==="DIVE"?6:(p.keeperState==="1V1"?4:2));
       if(Math.hypot(p.x-this.ball.x,p.y-this.ball.y)>reach)continue;
       const shotAgainst=this.ball.isShot&&this.ball.shotTeam!==p.team;
       if(!shotAgainst&&speed>440)continue;
-      const catchChance=Math.max(.18,Math.min(.88,.63+(rating-72)*.018-speed/1100+(p.keeperState==="SET"?.08:0)));
+
+      // A keeper who gets near the ball is not guaranteed to save it.
+      // Edge-of-reach, high-speed shots can beat him cleanly.
+      if(shotAgainst){
+        if(p.keeperMissShotId===this.ball.shotId)continue;
+        const dist=Math.hypot(p.x-this.ball.x,p.y-this.ball.y);
+        const edge=Math.max(0,Math.min(1,dist/reach));
+        const touchChance=Math.max(.38,Math.min(.90,
+          .68+(rating-72)*.012+(1-edge)*.18-Math.max(0,speed-360)/1300
+        ));
+        if(Math.random()>touchChance){
+          p.keeperMissShotId=this.ball.shotId;
+          p.action="keeperMiss";p.actionTimer=.20;
+          continue;
+        }
+      }
+
+      const catchChance=Math.max(.08,Math.min(.64,.43+(rating-72)*.011-speed/930+(p.keeperState==="SET"?.04:0)));
       if(Math.random()<catchChance){
         p.action="keeperCatch";p.actionTimer=.30;p.keeperState="SAVE";this.claim(i,true);this.ball.spinSpeed=0;
       }else{
         p.action="keeperParry";p.actionTimer=.28;p.keeperState="SAVE";
         const awayX=p.team===0?1:-1,safeSide=this.ball.y<this.H/2?-1:1;
-        const goodParry=Math.random()<Math.max(.45,Math.min(.88,.58+(rating-72)*.018));
+        const goodParry=Math.random()<Math.max(.34,Math.min(.76,.49+(rating-72)*.014));
         this.ball.owner=null;this.ball.state="free";this.ball.isShot=false;
         this.ball.vx=awayX*(210+speed*.22);this.ball.vy=(goodParry?safeSide:(Math.random()-.5))*Math.min(250,120+speed*.25);
         this.ball.lastTeam=p.team;this.ball.spinSpeed*=.65;
@@ -616,13 +674,13 @@ window.MatchEngine = class {
     const pressure=this.opponentPressureAt(p.x,p.y,p.team,72),quality=this.shotQuality(i),progress=p.team===0?p.x/this.W:1-p.x/this.W;
     p.decision-=dt;
     if(p.decision<=0){
-      p.decision=Math.max(.30,.68-profile.tempo*.20+Math.random()*.22);
-      if(this.teamShotCooldown[p.team]<=0&&progress>.60&&quality>(.34-(profile.rating-72)*.0045)){this.aiShoot(i);return}
+      p.decision=Math.max(.28,.62-profile.tempo*.16+Math.random()*.20);
+      if(this.teamShotCooldown[p.team]<=0&&progress>.60&&quality>(.12-(profile.rating-72)*.0032)){this.aiShoot(i);return}
       const through=profile.direct>.68&&progress>.40&&Math.random()<(.25+profile.direct*.15),pass=this.bestPass(i,through);
-      const mustRelease=pressure>=1||(progress>.70&&quality<.40),circulate=profile.mode==="possession"?.48:.30;
+      const mustRelease=pressure>=1||(progress>.72&&quality<.30),circulate=profile.mode==="possession"?.52:.34;
       if(pass&&(mustRelease||Math.random()<circulate)){this.aiPass(i,through);return}
     }
-    const laneY=p.fcRole==="WidePlaymaker"?p.homeY:this.H/2+(p.y-this.H/2)*.70,drive=progress<.72?86+profile.tempo*30:55;
+    const laneY=p.fcRole==="WidePlaymaker"?p.homeY:this.H/2+(p.y-this.H/2)*.66,drive=progress<.76?96+profile.tempo*34:66;
     this.steer(p,p.x+dir*drive,laneY,dt,1.00+profile.tempo*.09,1);
   }
 
@@ -639,12 +697,22 @@ window.MatchEngine = class {
     if(own&&carrier){
       const t=this.offBallRunTarget(p,carrier);
       const involved=Math.hypot(p.x-carrier.x,p.y-carrier.y)<this.W*.34||["AdvancedForward","HalfWinger","WidePlaymaker","BoxCrasher"].includes(p.fcRole);
-      p.lowUrgency=!involved;this.steer(p,t.x,t.y,dt,.86+profile.tempo*.11,involved?1:.52);return;
+      p.lowUrgency=!involved;this.steer(p,t.x,t.y,dt,.91+profile.tempo*.12,involved?1:.58);return;
     }
     if(team===this.userSide&&this.secondPress&&rank===1)rank=0;
     const t=this.defensiveTarget(p,rank,carrier),involved=rank<=1||Math.hypot(p.x-this.ball.x,p.y-this.ball.y)<this.W*.28;
-    p.lowUrgency=!involved;let mul=.80+profile.press*.16;if(rank===0)mul=1.02+profile.press*.13;
-    this.steer(p,t.x,t.y,dt,mul,involved?1:.56);
+    p.lowUrgency=!involved;let mul=.82+profile.press*.17;if(rank===0)mul=1.08+profile.press*.14;
+    this.steer(p,t.x,t.y,dt,mul,involved?1:.58);
+
+    // FC-like active pressure: an AI presser actually attempts the duel
+    // when he reaches the carrier, instead of waiting for perfect circle overlap.
+    if(carrier&&carrier.team!==team&&rank===0&&p.contactCd<=0){
+      const carrierIdx=this.ball.owner;
+      const duelDist=p.r+carrier.r+11;
+      if(carrierIdx!==null&&Math.hypot(p.x-carrier.x,p.y-carrier.y)<duelDist){
+        this.attemptDuel(i,carrierIdx,false);
+      }
+    }
   }
 
   aiPass(i,through=false){
@@ -664,53 +732,189 @@ window.MatchEngine = class {
     this.stats[p.team].shots++;this.stats[p.team].onTarget++;
     this.events.push({half:this.half,minute:this.displayMinute(),type:"Удар",team:p.team,text:`${p.name} пробил по воротам`});
     p.action="shootKick";p.actionTimer=.21;
-    const pow=485+(rating-72)*2;
+    const pow=545+(rating-72)*1.5;
     this.release(i,Math.cos(angle)*pow,Math.sin(angle)*pow,-1,false,true);
     this.ball.shotTargetY=target.gy;
-    this.teamShotCooldown[p.team]=3.0;
+    this.teamShotCooldown[p.team]=4.0;
   }
 
   setRestart(type,team,x,y){
-    this.ball.owner=null;this.ball.vx=this.ball.vy=0;this.ball.x=x;this.ball.y=y;this.ball.state="restart";this.ball.isShot=false;
+    if(this.restart)return;
+
+    if(this.ball.owner!==null&&this.players[this.ball.owner]){
+      this.players[this.ball.owner].hasBall=false;
+    }
+
+    this.ball.owner=null;
+    this.ball.vx=0;this.ball.vy=0;
+    this.ball.x=x;this.ball.y=y;
+    this.ball.state="restart";
+    this.ball.isShot=false;
+    this.ball.pickupLock=.20;
+    this.ball.ignorePlayer=-1;
+
     let thrower=-1;
     if(type==="throw"){
       const candidates=this.players.map((p,i)=>({p,i,d:Math.hypot(p.x-x,p.y-y)}))
-        .filter(o=>o.p.team===team&&o.p.role!=="GK"&&!o.p.sent).sort((a,b)=>a.d-b.d);
+        .filter(o=>o.p.team===team&&o.p.role!=="GK"&&!o.p.sent)
+        .sort((a,b)=>a.d-b.d);
       thrower=candidates[0]?.i??-1;
     }
-    this.restart={type,team,t:0,stage:type==="throw"?"approach":"wait",thrower,x,y};
+
+    this.restart={
+      type,team,x,y,thrower,
+      stage:type==="throw"?"approach":"wait",
+      age:0,stageAge:0
+    };
+
     if(type==="corner")this.stats[team].corners++;
   }
 
+  forceRestartRelease(r){
+    // Absolute safety net: no restart may lock the match.
+    const dir=r.team===0?1:-1;
+    const inwardY=r.y<=this.H/2?1:-1;
+
+    this.restart=null;
+    this.ball.state="free";
+    this.ball.owner=null;
+    this.ball.lastTeam=r.team;
+    this.ball.pickupLock=.14;
+    this.ball.ignorePlayer=r.thrower??-1;
+
+    if(r.type==="throw"){
+      this.ball.x=Math.max(34,Math.min(this.W-34,r.x));
+      this.ball.y=r.y<=31?32:this.H-32;
+      this.ball.vx=dir*(175+Math.random()*35);
+      this.ball.vy=inwardY*(120+Math.random()*45);
+      this.ball.spinSpeed=8*inwardY;
+    }else{
+      this.ball.vx=dir*315;
+      this.ball.vy=(Math.random()-.5)*105;
+      this.ball.spinSpeed=9;
+    }
+    this.phase="open";
+  }
+
   updateRestart(dt){
-    const r=this.restart;if(!r)return;
-    if(r.type==="throw"&&r.stage==="approach"){
-      const p=this.players[r.thrower];if(!p){r.stage="throw";r.t=.25;return}
-      const targetY=r.y<=31?r.y+10:r.y-10;
-      this.steer(p,r.x,targetY,dt,1.05,1);p.x+=p.vx*dt;p.y+=p.vy*dt;
-      if(Math.hypot(p.x-r.x,p.y-targetY)<16){p.vx=p.vy=0;p.action="throwIn";p.actionTimer=.35;r.stage="throw";r.t=.32}
+    const r=this.restart;
+    if(!r){
+      this.ball.state="free";
+      this.phase="open";
       return;
     }
-    if(r.stage==="wait"){r.t+=dt;if(r.t>.65){r.stage="throw";r.t=.20}return}
-    if(r.stage==="throw"){r.t-=dt;if(r.t<=0)this.takeRestart()}
+
+    r.age+=dt;
+    r.stageAge+=dt;
+
+    // Global watchdog: even in an unexpected geometry/state, resume play.
+    if(r.age>1.85){
+      this.forceRestartRelease(r);
+      return;
+    }
+
+    if(r.type==="throw"&&r.stage==="approach"){
+      const p=this.players[r.thrower];
+      if(!p){
+        r.stage="throw";r.stageAge=0;
+        return;
+      }
+
+      const targetX=Math.max(34,Math.min(this.W-34,r.x));
+      const targetY=r.y<=31?39:this.H-39;
+      const dx=targetX-p.x,dy=targetY-p.y,d=Math.hypot(dx,dy);
+
+      // Direct movement avoids collision/steering deadlocks.
+      if(d>1){
+        const step=Math.min(d,205*dt);
+        p.x+=dx/d*step;
+        p.y+=dy/d*step;
+        p.facingX=dx/d;p.facingY=dy/d;
+      }
+      p.vx=0;p.vy=0;
+
+      if(d<10||r.stageAge>.70){
+        p.x=targetX;p.y=targetY;
+        p.action="throwIn";p.actionTimer=.30;
+        r.stage="throw";r.stageAge=0;
+      }
+      return;
+    }
+
+    if(r.stage==="wait"){
+      if(r.stageAge>.42){
+        r.stage="throw";r.stageAge=0;
+      }
+      return;
+    }
+
+    if(r.stage==="throw"){
+      if(r.stageAge>.24)this.takeRestart();
+    }
   }
 
   takeRestart(){
-    const r=this.restart;if(!r)return;this.restart=null;this.ball.state="free";
+    const r=this.restart;
+    if(!r){
+      this.ball.state="free";this.phase="open";return;
+    }
+
     if(r.type==="throw"){
-      const thrower=this.players[r.thrower],targets=this.players.filter(q=>q.team===r.team&&q!==thrower&&q.role!=="GK"&&!q.sent)
-        .sort((a,b)=>this.opponentPressureAt(a.x,a.y,r.team)-this.opponentPressureAt(b.x,b.y,r.team));
+      const thrower=this.players[r.thrower];
+      const targets=this.players
+        .filter(q=>q.team===r.team&&q!==thrower&&q.role!=="GK"&&!q.sent)
+        .sort((a,b)=>{
+          const pa=this.opponentPressureAt(a.x,a.y,r.team);
+          const pb=this.opponentPressureAt(b.x,b.y,r.team);
+          const da=Math.hypot(a.x-r.x,a.y-r.y);
+          const db=Math.hypot(b.x-r.x,b.y-r.y);
+          return (pa*75+da)-(pb*75+db);
+        });
+
       const target=targets[0];
+      this.restart=null;
+      this.ball.state="free";
+      this.ball.owner=null;
+      this.ball.lastTeam=r.team;
+      this.ball.pickupLock=.12;
+      this.ball.ignorePlayer=r.thrower;
+
       if(target){
         const dx=target.x-r.x,dy=target.y-r.y,l=Math.hypot(dx,dy)||1;
-        this.ball.x=r.x;this.ball.y=r.y;this.ball.vx=dx/l*255;this.ball.vy=dy/l*255;this.ball.lastTeam=r.team;
-        this.ball.spinSpeed=9;this.ball.pickupLock=.10;this.ball.ignorePlayer=r.thrower;
-      }return;
+        this.ball.x=Math.max(34,Math.min(this.W-34,r.x));
+        this.ball.y=r.y<=31?32:this.H-32;
+        this.ball.vx=dx/l*270;
+        this.ball.vy=dy/l*270;
+      }else{
+        const dir=r.team===0?1:-1;
+        this.ball.vx=dir*190;
+        this.ball.vy=(r.y<=31?1:-1)*135;
+      }
+      this.ball.spinSpeed=9;
+      this.phase="open";
+      return;
     }
-    let tx=r.team===0?this.ball.x+140:this.ball.x-140,ty=this.H/2+(Math.random()-.5)*this.H*.36;
-    if(r.type==="corner"){tx=r.team===0?this.W*.72:this.W*.28;ty=this.H/2+(Math.random()-.5)*this.H*.13}
-    const dx=tx-this.ball.x,dy=ty-this.ball.y,l=Math.hypot(dx,dy)||1,pow=r.type==="corner"?370:320;
-    this.ball.vx=dx/l*pow;this.ball.vy=dy/l*pow;this.ball.lastTeam=r.team;this.ball.spinSpeed=12;this.ball.pickupLock=.10;this.ball.ignorePlayer=-1;
+
+    let tx=r.team===0?this.ball.x+145:this.ball.x-145;
+    let ty=this.H/2+(Math.random()-.5)*this.H*.30;
+    if(r.type==="corner"){
+      tx=r.team===0?this.W*.72:this.W*.28;
+      ty=this.H/2+(Math.random()-.5)*this.H*.12;
+    }
+
+    const dx=tx-this.ball.x,dy=ty-this.ball.y,l=Math.hypot(dx,dy)||1;
+    const pow=r.type==="corner"?375:325;
+
+    this.restart=null;
+    this.ball.state="free";
+    this.ball.owner=null;
+    this.ball.vx=dx/l*pow;
+    this.ball.vy=dy/l*pow;
+    this.ball.lastTeam=r.team;
+    this.ball.spinSpeed=11;
+    this.ball.pickupLock=.10;
+    this.ball.ignorePlayer=-1;
+    this.phase="open";
   }
 
   resolveContacts(){
@@ -747,7 +951,7 @@ window.MatchEngine = class {
 
   startSecondHalf(){
     this.half=2;this.halfElapsed=0;this.addedMinutes=0;this.addedReal=0;this.halftimeShown=false;
-    this.kickoff(1-this.kickoffTeam);this.paused=false;this.last=performance.now();requestAnimationFrame(t=>this.loop(t));
+    this.kickoff(1-this.openingKickoffTeam);this.paused=false;this.last=performance.now();requestAnimationFrame(t=>this.loop(t));
   }
 
   halftime(){
@@ -794,27 +998,31 @@ window.MatchEngine = class {
       else this.updateControlledBall(p,dt);
     }else{
       this.ball.x+=this.ball.vx*dt;this.ball.y+=this.ball.vy*dt;
-      this.ball.vx*=Math.pow(.15,dt);this.ball.vy*=Math.pow(.15,dt);
-      this.ball.spin+=this.ball.spinSpeed*dt;this.ball.spinSpeed*=Math.pow(.32,dt);
+      // Shots keep their pace like a real strike; passes/loose balls slow much faster.
+      const drag=this.ball.isShot?.52:.15;
+      this.ball.vx*=Math.pow(drag,dt);this.ball.vy*=Math.pow(drag,dt);
+      this.ball.spin+=this.ball.spinSpeed*dt;this.ball.spinSpeed*=Math.pow(this.ball.isShot?.58:.32,dt);
       this.keeperSaveContacts();
       if(this.ball.owner===null){
         const hits=this.players.map((p,i)=>({p,i,d:Math.hypot(p.x-this.ball.x,p.y-this.ball.y)}))
           .filter(o=>{
             if(o.p.sent||o.p.role==="GK")return false;
-            if(this.ball.isShot&&o.p.team===this.ball.shotTeam)return false;
-            const radius=this.ball.isShot?this.shotBlockRadius(o.p):(o.p.r+this.ball.r+2);
-            return o.d<radius;
+            if(this.ball.isShot)return false;
+            return o.d<o.p.r+this.ball.r+2;
           }).sort((a,b)=>a.d-b.d);
         for(const h of hits){if(this.claim(h.i,false))break}
       }
     }
 
     const gt=this.H*.39,gb=this.H*.61;
-    if(this.ball.owner===null&&this.ball.x>this.W-14&&this.ball.y>gt&&this.ball.y<gb){
+    // The actual goal line is the FRONT of the goal at B.l / B.r.
+    // Previously scoring was checked behind the net, so the out-of-bounds
+    // restart fired first and valid shots were incorrectly turned into goal kicks.
+    if(this.ball.owner===null&&this.ball.x>=B.r&&this.ball.y>gt&&this.ball.y<gb){
       this.score[0]++;this.events.push({half:this.half,minute:this.displayMinute(),type:"Гол",team:0,text:`Гол — ${this.home.name}`});
       this.lastGoalTime=this.elapsed;this.kickoff(1);return;
     }
-    if(this.ball.owner===null&&this.ball.x<14&&this.ball.y>gt&&this.ball.y<gb){
+    if(this.ball.owner===null&&this.ball.x<=B.l&&this.ball.y>gt&&this.ball.y<gb){
       this.score[1]++;this.events.push({half:this.half,minute:this.displayMinute(),type:"Гол",team:1,text:`Гол — ${this.away.name}`});
       this.lastGoalTime=this.elapsed;this.kickoff(0);return;
     }
@@ -867,6 +1075,7 @@ window.MatchEngine = class {
     if(p.role==="GK"&&p.keeperState==="DIVE"){sx=1.45;sy=.72;rot+=p.diveDir*.20}
     if(p.role==="GK"&&p.action==="keeperCatch"){sx=1.18;sy=.84}
     if(p.role==="GK"&&p.action==="keeperParry"){sx=1.35;sy=.76}
+    if(p.role==="GK"&&p.action==="keeperMiss"){sx=1.20;sy=.83;rot-=p.diveDir*.08}
     if(p.contactFlash>0){sx+=.05;sy-=.04}
 
     c.save();c.translate(p.x,p.y+bob);c.rotate(rot);
