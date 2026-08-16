@@ -1,0 +1,1 @@
+const C="rfc06";const A=["./","./index.html","./css/app.css","./js/data.js","./js/logos.js","./js/career.js","./js/match.js","./js/app.js","./manifest.webmanifest"];self.addEventListener("install",e=>e.waitUntil(caches.open(C).then(c=>c.addAll(A))));self.addEventListener("fetch",e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));

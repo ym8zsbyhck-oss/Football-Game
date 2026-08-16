@@ -1,0 +1,9 @@
+{
+  "name": "Russian Football Career 2026",
+  "short_name": "RFC 2026",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#06110b",
+  "theme_color": "#07140d"
+}
