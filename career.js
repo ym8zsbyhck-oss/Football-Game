@@ -132,15 +132,24 @@ window.Career = {
     slot=slot||this.firstFreeSlot();
     if(!this.validSlot(slot))return null;
     if(this.readSlot(slot))return null;
+    if(!club||!club.id||!club.league)return null;
 
     this.currentSlot=Number(slot);
 
     const group=club.league==="fnl2"?(club.group||"gold"):null;
     const pool=this.leagueClubs(club.league,group);
+    if(!pool.length){
+      this.currentSlot=null;
+      return null;
+    }
+
     const standings=pool.map(c=>({id:c.id,p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}));
 
+    // Build the base career FIRST.
+    // The Cup Regions path needs this.state/this.club() while creating
+    // its first opponent, so cup/supercup are attached only afterwards.
     this.state={
-      version:"1.1.4",
+      version:"1.1.5",
       clubId:club.id,
       league:club.league,
       group,
@@ -154,9 +163,19 @@ window.Career = {
       confidence:72,
       tactics:{line:50,width:52,press:"balanced",build:"balanced"},
       trophies:[],
-      cup:this.createCup(club),
-      supercup:this.createSupercup(club)
+      cup:null,
+      supercup:null
     };
+
+    try{
+      this.state.cup=this.createCup(club);
+      this.state.supercup=this.createSupercup(club);
+    }catch(err){
+      console.error("Career creation failed",err);
+      this.state=null;
+      this.currentSlot=null;
+      return null;
+    }
 
     this.save();
     return this.state;
@@ -167,7 +186,7 @@ window.Career = {
     const club=this.clubById(this.state.clubId);
     if(!club)return this.state;
 
-    this.state.version="1.1.4";
+    this.state.version="1.1.5";
     if(!Array.isArray(this.state.trophies))this.state.trophies=[];
 
     if(!Array.isArray(this.state.fixtures)||!this.state.fixtures.length){
@@ -194,7 +213,7 @@ window.Career = {
       this.currentSlot=this.firstFreeSlot()||1;
     }
 
-    this.state.version="1.1.4";
+    this.state.version="1.1.5";
     this.state.savedAt=new Date().toISOString();
     this.state.saveSlot=this.currentSlot;
 
@@ -440,8 +459,9 @@ window.Career = {
     cup.simulatedRounds.push(round);
   },
 
-  pickCupOpponent(cup,mode="regions"){
-    const user=this.club();
+  pickCupOpponent(cup,mode="regions",userClub=null){
+    const user=userClub||this.club();
+    if(!user)return null;
     let pool;
 
     if(mode==="regions"){
@@ -469,7 +489,7 @@ window.Career = {
   },
 
   scheduleRegionQualifier(cup,club,round){
-    const opp=this.pickCupOpponent(cup,"regions");
+    const opp=this.pickCupOpponent(cup,"regions",club);
     if(!opp){cup.status="eliminated";return}
 
     const order=DB.russianCup2026.regionOrders[round]||112;
