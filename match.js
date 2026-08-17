@@ -626,7 +626,7 @@ window.MatchEngine = class {
     const team=p.team;
     const gx=team===0?this.W+24:-24;
     const gt=this.H*.39,gb=this.H*.61;
-    const margin=this.ball.r+2;
+    const margin=this.ball.r+12;
 
     const keeper=this.players.find(q=>q.team!==team&&q.role==="GK"&&!q.sent);
     const keeperRating=((team===0?this.away.rating:this.home.rating)||72);
@@ -656,11 +656,11 @@ window.MatchEngine = class {
       const cornerBonus=Math.abs(y-this.H/2)/(gb-gt)*24;
 
       const score=
-        keeperGap*12.0 +
-        insidePost*.18 +
-        farPostBonus +
-        cornerBonus +
-        (Math.random()-.5)*2;
+        keeperGap*6.4 +
+        insidePost*.34 +
+        farPostBonus*.45 +
+        cornerBonus*.35 +
+        (Math.random()-.5)*13;
 
       if(score>bestScore){
         bestScore=score;bestY=y;bestMeta={keeperGap};
@@ -670,11 +670,23 @@ window.MatchEngine = class {
     return {gx,gy:bestY,score:bestScore,meta:bestMeta};
   }
 
+  shotWouldBeOnTarget(p,angle){
+    const goalX=p.team===0?this.W-30:30;
+    const vx=Math.cos(angle),vy=Math.sin(angle);
+    if(Math.abs(vx)<.0001)return false;
+    const t=(goalX-p.x)/vx;
+    if(t<=0)return false;
+    const y=p.y+vy*t;
+    const gt=this.H*.39,gb=this.H*.61;
+    return y>gt&&y<gb;
+  }
+
   startShotCharge(){
-    if(this.ball.owner===this.controlled){
-      this.shotCharging=true;this.shotCharge=0;
-      const p=this.players[this.controlled];p.action="shootPrep";p.actionTimer=9;
-    }
+    const p=this.players[this.controlled];
+    if(!p||this.ball.owner!==this.controlled)return;
+    if(this.teamShotCooldown[p.team]>0)return;
+    this.shotCharging=true;this.shotCharge=0;
+    p.action="shootPrep";p.actionTimer=9;
   }
 
   releaseShot(){
@@ -684,17 +696,18 @@ window.MatchEngine = class {
     const level=this.aiLevel(p.team);
     const target=this.chooseGoalTarget(this.controlled),pressure=this.opponentPressureAt(p.x,p.y,p.team,68);
     const dx=target.gx-p.x,dy=target.gy-p.y,l=Math.hypot(dx,dy)||1,charge=Math.max(.18,Math.min(1,this.shotCharge));
-    const error=Math.max(.0014,
-      (1-level.shotAccuracy)*.038+
-      pressure*(.0041-level.composure*.0015)
+    const error=Math.max(.048,
+      .050+(1-level.shotAccuracy)*.20+
+      pressure*(.014-level.composure*.0032)
     );
     const angle=Math.atan2(dy,dx)+(Math.random()-.5)*error;
-    this.stats[p.team].shots++;this.stats[p.team].onTarget++;
+    this.stats[p.team].shots++;
+    if(this.shotWouldBeOnTarget(p,angle))this.stats[p.team].onTarget++;
     this.events.push({half:this.half,minute:this.displayMinute(),type:"Удар",team:p.team,text:`${p.name} пробил по воротам`});
     p.action="shootKick";p.actionTimer=.22;
     this.release(this.controlled,Math.cos(angle)*(365+235*charge),Math.sin(angle)*(365+235*charge),-1,false,true);
     this.ball.shotTargetY=target.gy;
-    this.teamShotCooldown[p.team]=2.9;
+    this.teamShotCooldown[p.team]=4.8;
   }
 
   duelChance(defender,carrier,explicit=false){
@@ -859,8 +872,8 @@ window.MatchEngine = class {
         if(p.keeperMissShotId===this.ball.shotId)continue;
         const dist=Math.hypot(p.x-this.ball.x,p.y-this.ball.y);
         const edge=Math.max(0,Math.min(1,dist/reach));
-        const touchChance=Math.max(.25,Math.min(.79,
-          .41+level.keeper*.28+(1-edge)*.12-Math.max(0,speed-340)/1120
+        const touchChance=Math.max(.34,Math.min(.88,
+          .50+level.keeper*.31+(1-edge)*.14-Math.max(0,speed-360)/1320
         ));
         if(Math.random()>touchChance){
           p.keeperMissShotId=this.ball.shotId;
@@ -956,8 +969,8 @@ window.MatchEngine = class {
         Math.random()*(.23-level.norm*.075)
       );
 
-      const shootingProgress=.67-level.norm*.07-profile.risk*.055;
-      const shootingThreshold=.205-level.norm*.10-profile.risk*.075;
+      const shootingProgress=.785-level.norm*.040-profile.risk*.030;
+      const shootingThreshold=.340-level.norm*.050-profile.risk*.040;
 
       if(this.teamShotCooldown[p.team]<=0 &&
          progress>shootingProgress &&
@@ -1056,20 +1069,21 @@ window.MatchEngine = class {
     const p=this.players[i],rating=(p.team===0?this.home.rating:this.away.rating)||72,target=this.chooseGoalTarget(i),level=this.aiLevel(p.team);
     const dx=target.gx-p.x,dy=target.gy-p.y,l=Math.hypot(dx,dy)||1,pressure=this.opponentPressureAt(p.x,p.y,p.team,68);
 
-    const error=Math.max(.0014,
-      (1-level.shotAccuracy)*.038+
-      pressure*(.0040-level.composure*.0015)
+    const error=Math.max(.055,
+      .055+(1-level.shotAccuracy)*.22+
+      pressure*(.016-level.composure*.0035)
     );
     const angle=Math.atan2(dy,dx)+(Math.random()-.5)*error;
 
-    this.stats[p.team].shots++;this.stats[p.team].onTarget++;
+    this.stats[p.team].shots++;
+    if(this.shotWouldBeOnTarget(p,angle))this.stats[p.team].onTarget++;
     this.events.push({half:this.half,minute:this.displayMinute(),type:"Удар",team:p.team,text:`${p.name} пробил по воротам`});
     p.action="shootKick";p.actionTimer=.21;
 
     const pow=532+level.norm*32;
     this.release(i,Math.cos(angle)*pow,Math.sin(angle)*pow,-1,false,true);
     this.ball.shotTargetY=target.gy;
-    this.teamShotCooldown[p.team]=3.70-level.norm*.78;
+    this.teamShotCooldown[p.team]=7.10-level.norm*.80;
   }
 
   setRestart(type,team,x,y){
