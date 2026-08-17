@@ -197,7 +197,10 @@ window.App={
             ${badge(f)}
             <p><b>${DB.clubs.find(x=>x.id===f.home)?.name}</b> — <b>${DB.clubs.find(x=>x.id===f.away)?.name}</b></p>
             <small>${f.stage||f.label||Career.competitionName(f)}</small>
-            <button id="play" class="primary">СЫГРАТЬ</button>
+            <div class="matchModeButtons">
+              <button id="play" class="primary">ИГРАТЬ САМОМУ</button>
+              <button id="coachMatch" class="secondary coachStart">РЕЖИМ ТРЕНЕРА</button>
+            </div>
           `:"<p>Матчей в текущем календаре больше нет.</p>"}
         </div>
 
@@ -208,10 +211,11 @@ window.App={
 
         <div class="card">
           <b>ИИ матча</b>
-          <p>v1.1.5 Team IQ: рейтинг клуба влияет на решения, прессинг, передачи, первый приём, забегания, завершение и вратаря.</p>
+          <p>v1.2.1 Team IQ: рейтинг клуба влияет на решения, прессинг, передачи, первый приём, забегания, завершение и вратаря.</p>
         </div>`;
 
-      this.$("#play")?.addEventListener("click",()=>this.playFixture(f));
+      this.$("#play")?.addEventListener("click",()=>this.playFixture(f,"player"));
+      this.$("#coachMatch")?.addEventListener("click",()=>this.playFixture(f,"coach"));
     }
 
     else if(tab==="table"){
@@ -340,22 +344,86 @@ window.App={
     }
   },
 
-  playFixture(f){
+  scoreboardThemeForFixture(f){
+    if(f?.competition==="cup")return "cup";
+    if(f?.competition==="supercup")return "supercup";
+
+    const league=Career.state?.league;
+    if(league==="fnl1")return "fnl1";
+    if(league==="fnl2")return "fnl2";
+    return "rpl";
+  },
+
+  scoreboardMeta(theme){
+    const meta={
+      rpl:{top:"АЛЬФА-БАНК",main:"РПЛ",icon:"РПЛ",label:"АЛЬФА-БАНК РПЛ • 2026/27"},
+      fnl1:{top:"ЛИГА",main:"PARI",icon:"1",label:"ЛИГА PARI • 2026/27"},
+      fnl2:{top:"LEON",main:"2 ЛИГА А",icon:"2",label:"LEON • ВТОРАЯ ЛИГА А • 2026/27"},
+      cup:{top:"FONBET",main:"КУБОК РОССИИ",icon:"КР",label:"FONBET КУБОК РОССИИ • 2026/27"},
+      supercup:{top:"OLIMPBET",main:"СУПЕРКУБОК",icon:"СК",label:"OLIMPBET СУПЕРКУБОК РОССИИ • 2026"}
+    };
+    return meta[theme]||meta.rpl;
+  },
+
+  applyScoreboardTheme(f,h,a,mode){
+    const theme=this.scoreboardThemeForFixture(f);
+    const meta=this.scoreboardMeta(theme);
+    const game=this.$("#game");
+    const hud=this.$("#matchHud");
+
+    ["score-rpl","score-fnl1","score-fnl2","score-cup","score-supercup"].forEach(x=>{
+      game.classList.remove(x);hud?.classList.remove(x);
+    });
+    game.classList.add(`score-${theme}`);
+    hud?.classList.add(`score-${theme}`);
+    if(hud)hud.dataset.scoreboard=theme;
+
+    game.style.setProperty("--home-accent",h?.color||"#efefef");
+    game.style.setProperty("--away-accent",a?.color||"#efefef");
+
+    this.$("#leagueMarkTop").textContent=meta.top;
+    this.$("#leagueMarkMain").textContent=meta.main;
+    this.$("#leagueMarkIcon").textContent=meta.icon;
+    this.$("#competitionLabel").textContent=(mode==="coach"?"ТРЕНЕР • ":"")+meta.label;
+  },
+
+  playFixture(f,mode="player"){
     const h=DB.clubs.find(c=>c.id===f.home);
     const a=DB.clubs.find(c=>c.id===f.away);
-    const userSide=f.home===Career.state.clubId?0:1;
+    const careerSide=f.home===Career.state.clubId?0:1;
 
+    this.matchMode=mode;
     this.currentFixture=f;
+
     this.$("#hName").textContent=h.abbr;
     this.$("#aName").textContent=a.abbr;
-    this.$("#competitionLabel").textContent=Career.competitionName(f).toUpperCase();
+    this.applyScoreboardTheme(f,h,a,mode);
 
     Logos.bind(this.$("#hLogo"),h);
     Logos.bind(this.$("#aLogo"),a);
 
+    const game=this.$("#game");
+    game.classList.toggle("coachMode",mode==="coach");
+
+    this.$("#coachPanel").classList.remove("collapsed");
+    this.$("#coachPanel").style.display=mode==="coach"?"block":"none";
+    this.$("#coachToggle").style.display="none";
+
     this.show("game");
+
     this.engine=new MatchEngine(this.$("#pitch"),sc=>this.finishMatch(sc));
-    this.engine.start(h,a,userSide);
+    this.engine.start(
+      h,
+      a,
+      careerSide,
+      {
+        mode,
+        coachSide:careerSide,
+        tactics:Career.state.managerTactics||{}
+      }
+    );
+
+    if(mode==="coach")this.syncCoachUI();
   },
 
   finishMatch(sc){
@@ -364,8 +432,46 @@ window.App={
     this.$("#resultText").textContent=result.display;
   },
 
+  coachLabel(group,value){
+    const labels={
+      mentality:{defensive:"Оборона",balanced:"Баланс",attacking:"Атака"},
+      press:{low:"Низкий пресс",balanced:"Средний пресс",high:"Высокий пресс"},
+      tempo:{slow:"Спокойный темп",balanced:"Нормальный темп",fast:"Быстрый темп"},
+      width:{narrow:"Узко",balanced:"Нормальная ширина",wide:"Широко"},
+      build:{possession:"Контроль мяча",balanced:"Сбалансировано",direct:"Вертикально",counter:"Контратака"}
+    };
+    return labels[group]?.[value]||value;
+  },
+
+  syncCoachUI(){
+    if(!this.engine||this.engine.controlMode!=="coach")return;
+    const t=this.engine.coachTactics;
+
+    document.querySelectorAll("[data-coach-group]").forEach(btn=>{
+      const active=t[btn.dataset.coachGroup]===btn.dataset.coachValue;
+      btn.classList.toggle("active",active);
+    });
+
+    if(Career.state){
+      Career.state.managerTactics={...t};
+      Career.save();
+    }
+  },
+
+  applyCoachInstruction(group,value){
+    if(!this.engine?.setCoachInstruction(group,value))return;
+    this.syncCoachUI();
+  },
+
+  coachShout(type){
+    if(!this.engine?.triggerCoachShout(type))return;
+    document.querySelectorAll("[data-coach-shout]").forEach(btn=>{
+      btn.classList.toggle("active",btn.dataset.coachShout===type);
+    });
+  },
+
   updateHUD(e){
-    this.$("#score").textContent=`${e.score[0]} : ${e.score[1]}`;
+    this.$("#score").textContent=`${e.score[0]}–${e.score[1]}`;
     let minute=e.displayMinute(),sec=0;
     if(e.halfElapsed<=e.realHalfDuration){
       const base=e.half===1?0:45;
@@ -373,6 +479,28 @@ window.App={
       minute=Math.floor(base+exact);sec=Math.floor((exact-Math.floor(exact))*60);
     }
     this.$("#clock").textContent=String(minute).padStart(2,"0")+":"+String(sec).padStart(2,"0")+(e.addedMinutes&&e.halfElapsed>=e.realHalfDuration?` +${e.addedMinutes}`:"");
+
+    if(e.controlMode==="coach"){
+      const total=e.stats[0].possession+e.stats[1].possession||1;
+      const own=e.coachSide;
+      const possession=Math.round(e.stats[own].possession/total*100);
+      const phase=e.teamPhases[own]||"SHAPE";
+      const shout=e.coachShoutTimer>0?` • ${Math.ceil(e.coachShoutTimer)}с`:"";
+
+      if(this.$("#coachLive")){
+        this.$("#coachLive").innerHTML=
+          `<b>${this.coachLabel("mentality",e.coachTactics.mentality)}</b> • `+
+          `${this.coachLabel("press",e.coachTactics.press)} • `+
+          `${this.coachLabel("tempo",e.coachTactics.tempo)}<br>`+
+          `<span>Владение ${possession}% • Удары ${e.stats[own].shots} • ${phase}${shout}</span>`;
+      }
+
+      if(e.coachShoutTimer<=0){
+        document.querySelectorAll("[data-coach-shout]").forEach(btn=>btn.classList.remove("active"));
+      }
+
+      return;
+    }
 
     const ownBall=e.ball.owner!==null&&e.players[e.ball.owner]?.team===e.userSide;
     const controlledOwn=e.ball.owner===e.controlled;
@@ -423,6 +551,7 @@ window.App={
   setupControls(){
     const c=this.$("#pitch"),joy=this.$("#joy"),kn=this.$("#knob");let pid=null,cx=0,cy=0;
     c.onpointerdown=e=>{
+      if(this.engine?.controlMode==="coach")return;
       if(e.clientX>innerWidth*.53)return;
       pid=e.pointerId;cx=e.clientX;cy=e.clientY;
       joy.style.display="block";joy.style.left=e.clientX-59+"px";joy.style.top=e.clientY-59+"px";
@@ -445,7 +574,7 @@ window.App={
     const controlledOwns=()=>this.engine&&this.engine.ball.owner===this.engine.controlled;
 
     this.$("#pass").onpointerdown=()=>{
-      if(!this.engine)return;
+      if(!this.engine||this.engine.controlMode==="coach")return;
       if(controlledOwns())this.engine.startPassCharge();
       else this.engine.pressAssist=true;
     };
@@ -461,7 +590,7 @@ window.App={
     };
 
     this.$("#through").onpointerdown=()=>{
-      if(!this.engine)return;
+      if(!this.engine||this.engine.controlMode==="coach")return;
       if(controlledOwns())this.engine.startPassCharge();
       else this.engine.secondPress=true;
     };
@@ -477,7 +606,7 @@ window.App={
     };
 
     this.$("#shoot").onpointerdown=()=>{
-      if(!this.engine)return;
+      if(!this.engine||this.engine.controlMode==="coach")return;
       if(controlledOwns())this.engine.startShotCharge();else this.engine.tackle();
     };
     this.$("#shoot").onpointerup=()=>this.engine?.releaseShot();
@@ -487,6 +616,25 @@ window.App={
 
     this.$("#sprint").onpointerdown=()=>{if(this.engine)this.engine.sprint=true};
     ["pointerup","pointerleave","pointercancel"].forEach(x=>this.$("#sprint").addEventListener(x,()=>{if(this.engine)this.engine.sprint=false}));
+
+    document.querySelectorAll("[data-coach-group]").forEach(btn=>{
+      btn.onclick=()=>this.applyCoachInstruction(btn.dataset.coachGroup,btn.dataset.coachValue);
+    });
+
+    document.querySelectorAll("[data-coach-shout]").forEach(btn=>{
+      btn.onclick=()=>this.coachShout(btn.dataset.coachShout);
+    });
+
+    this.$("#coachClose").onclick=()=>{
+      this.$("#coachPanel").style.display="none";
+      this.$("#coachToggle").style.display="block";
+    };
+
+    this.$("#coachToggle").onclick=()=>{
+      if(this.engine?.controlMode!=="coach")return;
+      this.$("#coachPanel").style.display="block";
+      this.$("#coachToggle").style.display="none";
+    };
 
     this.$("#pause").onclick=()=>{if(!this.engine)return;this.engine.paused=true;this.$("#pauseOverlay").style.display="flex"};
     this.$("#resume").onclick=()=>{this.$("#pauseOverlay").style.display="none";this.engine.paused=false;this.engine.last=performance.now();requestAnimationFrame(t=>this.engine.loop(t))};

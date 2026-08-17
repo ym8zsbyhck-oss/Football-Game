@@ -149,7 +149,7 @@ window.Career = {
     // The Cup Regions path needs this.state/this.club() while creating
     // its first opponent, so cup/supercup are attached only afterwards.
     this.state={
-      version:"1.1.5",
+      version:"1.2.0",
       clubId:club.id,
       league:club.league,
       group,
@@ -162,6 +162,13 @@ window.Career = {
       morale:78,
       confidence:72,
       tactics:{line:50,width:52,press:"balanced",build:"balanced"},
+      managerTactics:{
+        mentality:"balanced",
+        press:"balanced",
+        tempo:"balanced",
+        width:"balanced",
+        build:"balanced"
+      },
       trophies:[],
       cup:null,
       supercup:null
@@ -186,8 +193,17 @@ window.Career = {
     const club=this.clubById(this.state.clubId);
     if(!club)return this.state;
 
-    this.state.version="1.1.5";
+    this.state.version="1.2.0";
     if(!Array.isArray(this.state.trophies))this.state.trophies=[];
+    if(!this.state.managerTactics){
+      this.state.managerTactics={
+        mentality:"balanced",
+        press:"balanced",
+        tempo:"balanced",
+        width:"balanced",
+        build:"balanced"
+      };
+    }
 
     if(!Array.isArray(this.state.fixtures)||!this.state.fixtures.length){
       this.state.fixtures=this.makeLeagueFixtures(club);
@@ -213,7 +229,7 @@ window.Career = {
       this.currentSlot=this.firstFreeSlot()||1;
     }
 
-    this.state.version="1.1.5";
+    this.state.version="1.2.0";
     this.state.savedAt=new Date().toISOString();
     this.state.saveSlot=this.currentSlot;
 

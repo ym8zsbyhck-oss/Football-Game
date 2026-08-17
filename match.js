@@ -24,6 +24,19 @@ window.MatchEngine = class {
     this.kickoffPasser=-1;
     this.kickoffReceiveTimer=0;
     this.aiDifficulty=.58;this.openingKickoffTeam=0;
+
+    // v1.2.0 Manager / Coach Mode.
+    this.controlMode="player";
+    this.coachSide=-1;
+    this.coachTactics={
+      mentality:"balanced",
+      press:"balanced",
+      tempo:"balanced",
+      width:"balanced",
+      build:"balanced"
+    };
+    this.coachShout=null;
+    this.coachShoutTimer=0;
   }
 
   newStats(){
@@ -72,6 +85,118 @@ window.MatchEngine = class {
     return map[id]||["Вратарь","Защитник","Полузащитник","Плеймейкер","Нападающий"];
   }
 
+  clamp01(v){return Math.max(0,Math.min(1,v))}
+
+  setCoachInstruction(group,value){
+    if(this.controlMode!=="coach")return false;
+
+    const allowed={
+      mentality:["defensive","balanced","attacking"],
+      press:["low","balanced","high"],
+      tempo:["slow","balanced","fast"],
+      width:["narrow","balanced","wide"],
+      build:["possession","balanced","direct","counter"]
+    };
+
+    if(!allowed[group]?.includes(value))return false;
+    this.coachTactics[group]=value;
+    return true;
+  }
+
+  triggerCoachShout(type){
+    if(this.controlMode!=="coach")return false;
+    const durations={attack:8,press:7,calm:8,hold:8};
+    if(!durations[type])return false;
+    this.coachShout=type;
+    this.coachShoutTimer=durations[type];
+    return true;
+  }
+
+  coachProfile(team,base){
+    if(this.controlMode!=="coach"||team!==this.coachSide)return base;
+
+    const p={...base};
+    const t=this.coachTactics||{};
+
+    if(t.mentality==="defensive"){
+      p.line-=.14;p.risk-=.17;p.tempo-=.06;p.press-=.04;
+    }else if(t.mentality==="attacking"){
+      p.line+=.12;p.risk+=.18;p.tempo+=.08;p.press+=.06;
+    }
+
+    if(t.press==="low"){
+      p.press-=.18;p.counter-=.08;p.line-=.05;
+    }else if(t.press==="high"){
+      p.press+=.18;p.counter+=.12;p.line+=.07;
+    }
+
+    if(t.tempo==="slow"){
+      p.tempo-=.15;p.direct-=.08;p.risk-=.03;
+    }else if(t.tempo==="fast"){
+      p.tempo+=.14;p.direct+=.06;p.risk+=.04;
+    }
+
+    if(t.width==="narrow")p.width-=.18;
+    else if(t.width==="wide")p.width+=.18;
+
+    if(t.build==="possession"){
+      p.direct-=.22;p.tempo-=.04;p.risk-=.02;
+    }else if(t.build==="direct"){
+      p.direct+=.22;p.tempo+=.08;p.risk+=.07;
+    }else if(t.build==="counter"){
+      p.counter+=.20;p.direct+=.17;p.line-=.08;p.risk+=.03;
+    }
+
+    if(this.coachShoutTimer>0){
+      if(this.coachShout==="attack"){
+        p.risk+=.18;p.tempo+=.12;p.line+=.08;p.direct+=.08;
+      }else if(this.coachShout==="press"){
+        p.press+=.24;p.counter+=.16;p.line+=.08;
+      }else if(this.coachShout==="calm"){
+        p.tempo-=.12;p.direct-=.10;p.risk-=.06;
+      }else if(this.coachShout==="hold"){
+        p.line-=.17;p.risk-=.20;p.tempo-=.08;p.press-=.04;
+      }
+    }
+
+    for(const k of ["press","counter","direct","width","tempo","line","risk"]){
+      p[k]=this.clamp01(p[k]);
+    }
+    return p;
+  }
+
+  coachLevel(team,base){
+    if(this.controlMode!=="coach"||team!==this.coachSide)return base;
+    const x={...base};
+    const t=this.coachTactics||{};
+
+    if(t.tempo==="fast"){
+      x.decision*=.91;
+      x.mistake+=.012;
+    }else if(t.tempo==="slow"){
+      x.decision*=1.06;
+      x.composure=Math.min(.98,x.composure+.035);
+      x.passAccuracy=Math.min(.98,x.passAccuracy+.018);
+    }
+
+    if(t.build==="possession"){
+      x.passAccuracy=Math.min(.98,x.passAccuracy+.018);
+      x.composure=Math.min(.98,x.composure+.018);
+    }
+
+    if(this.coachShoutTimer>0&&this.coachShout==="calm"){
+      x.composure=Math.min(.99,x.composure+.055);
+      x.mistake=Math.max(.025,x.mistake-.035);
+    }
+
+    if(this.coachShoutTimer>0&&this.coachShout==="attack"){
+      x.supportRuns=Math.min(.99,x.supportRuns+.06);
+      x.decision*=.94;
+    }
+
+    return x;
+  }
+
   aiLevel(team){
     const club=team===0?this.home:this.away;
     const rating=club?.rating||72;
@@ -83,7 +208,7 @@ window.MatchEngine = class {
     else if(rating>=74)tier="average";
     else if(rating>=69)tier="developing";
 
-    return {
+    const level={
       rating,norm,tier,
       decision:1.18-norm*.36,
       passAccuracy:.76+norm*.20,
@@ -98,21 +223,29 @@ window.MatchEngine = class {
       mistake:.17-norm*.11,
       tempo:.90+norm*.14
     };
+    return this.coachLevel(team,level);
   }
 
   tacticalProfile(team){
     const club=team===0?this.home:this.away;
     const r=club?.rating||72,id=club?.id||"";
     const explicit=window.DB?.teamStyles?.[id];
-    if(explicit)return {...explicit,rating:r,reaction:Math.max(.095,.19-(r-68)*.0045)};
-    let mode=r>=80?"possession":(r<=69?"compact":"balanced");
-    const base={
-      possession:{press:.80,counter:.82,direct:.48,width:.73,tempo:.80,line:.72,risk:.65},
-      compact:{press:.68,counter:.66,direct:.74,width:.56,tempo:.64,line:.50,risk:.43},
-      balanced:{press:.74,counter:.75,direct:.62,width:.65,tempo:.73,line:.61,risk:.56}
-    }[mode];
-    const q=(r-68)/18;
-    return {...base,mode,rating:r,reaction:Math.max(.105,.19-q*.055)};
+
+    let out;
+    if(explicit){
+      out={...explicit,rating:r,reaction:Math.max(.095,.19-(r-68)*.0045)};
+    }else{
+      const mode=r>=80?"possession":(r<=69?"compact":"balanced");
+      const base={
+        possession:{press:.80,counter:.82,direct:.48,width:.73,tempo:.80,line:.72,risk:.65},
+        compact:{press:.68,counter:.66,direct:.74,width:.56,tempo:.64,line:.50,risk:.43},
+        balanced:{press:.74,counter:.75,direct:.62,width:.65,tempo:.73,line:.61,risk:.56}
+      }[mode];
+      const q=(r-68)/18;
+      out={...base,mode,rating:r,reaction:Math.max(.105,.19-q*.055)};
+    }
+
+    return this.coachProfile(team,out);
   }
 
   rolePlan(team){
@@ -126,8 +259,26 @@ window.MatchEngine = class {
     ];
   }
 
-  start(home,away,userSide){
-    this.home=home;this.away=away;this.userSide=userSide;
+  start(home,away,userSide,options={}){
+    this.home=home;this.away=away;
+
+    this.controlMode=options.mode==="coach"?"coach":"player";
+    this.coachSide=Number.isInteger(options.coachSide)?options.coachSide:userSide;
+
+    // In coach mode there is no manually controlled team/player.
+    // Using a non-existent side makes both teams run through the AI path.
+    this.userSide=this.controlMode==="coach"?2:userSide;
+    this.coachTactics={
+      mentality:"balanced",
+      press:"balanced",
+      tempo:"balanced",
+      width:"balanced",
+      build:"balanced",
+      ...(options.tactics||{})
+    };
+    this.coachShout=null;
+    this.coachShoutTimer=0;
+
     this.score=[0,0];this.elapsed=0;this.half=1;this.halfElapsed=0;
     this.addedMinutes=0;this.addedReal=0;this.halftimeShown=false;
     this.running=true;this.paused=false;this.matchClockRunning=false;this.stats=this.newStats();this.events=[];
@@ -760,8 +911,16 @@ window.MatchEngine = class {
     else if(p.fcRole==="Holding"){x=carrier.x-dir*(72+profile.direct*20);y=this.H/2+(p.homeY-this.H/2)*.50}
     else if(p.fcRole==="DeepPlaymaker"){x=carrier.x-dir*42;y=carrier.y+(p.homeY-this.H/2)*.52}
     else if(p.fcRole==="BoxCrasher"){x=carrier.x+dir*((phase==="FINAL_THIRD"||phase==="CHANCE")?92:38);y=this.H/2+Math.sin(p.runSeed)*this.H*.12}
-    else if(p.fcRole==="WidePlaymaker"){x=carrier.x+dir*(78+profile.tempo*28);y=this.H*(p.homeY<this.H/2?.18:.82)}
-    else if(p.fcRole==="HalfWinger"){x=carrier.x+dir*(92+profile.tempo*30);y=this.H*(p.homeY<this.H/2?.36:.64)}
+    else if(p.fcRole==="WidePlaymaker"){
+      const edge=.50-(.18+profile.width*.18);
+      x=carrier.x+dir*(78+profile.tempo*28);
+      y=this.H*(p.homeY<this.H/2?edge:1-edge);
+    }
+    else if(p.fcRole==="HalfWinger"){
+      const half=.50-(.08+profile.width*.09);
+      x=carrier.x+dir*(92+profile.tempo*30);
+      y=this.H*(p.homeY<this.H/2?half:1-half);
+    }
     else if(p.fcRole==="AdvancedForward"){x=carrier.x+dir*(145+profile.direct*42);y=this.H*(Math.sin(p.runSeed)>0?.40:.60)}
     else if(p.fcRole==="TargetForward"){x=carrier.x+dir*(105+profile.direct*24);y=this.H/2+Math.sin(p.runSeed)*this.H*.06}
     return{x,y};
@@ -797,8 +956,8 @@ window.MatchEngine = class {
         Math.random()*(.23-level.norm*.075)
       );
 
-      const shootingProgress=.64-level.norm*.08;
-      const shootingThreshold=.18-level.norm*.11;
+      const shootingProgress=.67-level.norm*.07-profile.risk*.055;
+      const shootingThreshold=.205-level.norm*.10-profile.risk*.075;
 
       if(this.teamShotCooldown[p.team]<=0 &&
          progress>shootingProgress &&
@@ -816,6 +975,7 @@ window.MatchEngine = class {
 
       let circulate=profile.mode==="possession"?.43:.27;
       circulate+=level.norm*.18;
+      circulate+=(1-profile.direct)*.10;
 
       if(pass&&(mustRelease||Math.random()<circulate)){
         this.aiPass(i,through);return;
@@ -1188,6 +1348,12 @@ window.MatchEngine = class {
       }
     }
     this.counterPressTimer=Math.max(0,this.counterPressTimer-dt);
+
+    if(this.coachShoutTimer>0){
+      this.coachShoutTimer=Math.max(0,this.coachShoutTimer-dt);
+      if(this.coachShoutTimer<=0)this.coachShout=null;
+    }
+
     this.teamShotCooldown[0]=Math.max(0,this.teamShotCooldown[0]-dt);this.teamShotCooldown[1]=Math.max(0,this.teamShotCooldown[1]-dt);
     this.teamPhases[0]=this.teamPhase(0);this.teamPhases[1]=this.teamPhase(1);
 
@@ -1205,7 +1371,16 @@ window.MatchEngine = class {
 
     this.players.forEach((p,i)=>{
       p.contactCd=Math.max(0,p.contactCd-dt);
-      p.stamina=Math.max(.30,p.stamina-dt*(Math.hypot(p.vx,p.vy)>115?.00245:.00052));
+
+      let extraCoachCost=0;
+      if(this.controlMode==="coach"&&p.team===this.coachSide&&p.role!=="GK"){
+        if(this.coachTactics.press==="high")extraCoachCost+=.00115;
+        if(this.coachTactics.tempo==="fast")extraCoachCost+=.00045;
+        if(this.coachShoutTimer>0&&this.coachShout==="press")extraCoachCost+=.00125;
+        if(this.coachShoutTimer>0&&this.coachShout==="attack")extraCoachCost+=.00050;
+      }
+
+      p.stamina=Math.max(.30,p.stamina-dt*((Math.hypot(p.vx,p.vy)>115?.00245:.00052)+extraCoachCost));
       if(p.role==="GK")this.keeperAI(p,i,dt);else if(i!==this.controlled)this.ai(p,i,dt);
       this.updateFacing(p,dt);
       p.x=Math.max(B.l+2,Math.min(B.r-2,p.x+p.vx*dt));p.y=Math.max(B.t+2,Math.min(B.b-2,p.y+p.vy*dt));

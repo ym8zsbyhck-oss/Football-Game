@@ -810,3 +810,450 @@ canvas,
   .slotContinue{padding:6px;font-size:6px}
   .slotDelete{width:22px;height:22px;font-size:14px}
 }
+
+
+/* =========================================================
+   v1.2.0 — Manager / Coach Match Mode
+   ========================================================= */
+
+.matchModeButtons{
+  display:flex;
+  gap:7px;
+  margin-top:9px;
+}
+
+.matchModeButtons button{
+  flex:1;
+}
+
+.coachStart{
+  border-color:#d9b55255;
+  background:#342b15cc;
+  color:#f0d58c;
+}
+
+.coachOnly{
+  display:none;
+}
+
+#game.coachMode .actions,
+#game.coachMode .playerInfo,
+#game.coachMode .joy{
+  display:none!important;
+}
+
+.coachPanel{
+  position:absolute;
+  z-index:18;
+  right:var(--sr);
+  bottom:calc(var(--sb) + 7px);
+  width:258px;
+  max-height:calc(100vh - var(--st) - var(--sb) - 78px);
+  overflow:auto;
+  padding:9px;
+  border-radius:15px;
+  background:#06110ded;
+  border:1px solid #ffffff25;
+  backdrop-filter:blur(12px);
+  box-shadow:0 12px 35px #0007;
+}
+
+.coachHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:7px;
+}
+
+.coachHead>div{
+  display:flex;
+  flex-direction:column;
+}
+
+.coachHead small{
+  color:#d5bb6f;
+  font-size:6px;
+  letter-spacing:.13em;
+  font-weight:900;
+}
+
+.coachHead b{
+  font-size:12px;
+}
+
+.coachHead button{
+  width:24px;
+  height:24px;
+  border:0;
+  border-radius:7px;
+  background:#ffffff0d;
+  font-size:16px;
+}
+
+.coachLive{
+  padding:6px 7px;
+  border-radius:9px;
+  background:#ffffff08;
+  color:#c7d9ce;
+  font-size:8px;
+  line-height:1.35;
+  margin-bottom:7px;
+}
+
+.coachLive b{
+  color:#fff;
+}
+
+.coachLive span{
+  color:#8fa79a;
+}
+
+.coachGroup{
+  margin-top:6px;
+}
+
+.coachGroup>span{
+  display:block;
+  font-size:7px;
+  color:#8fa79a;
+  margin:0 0 3px 2px;
+  font-weight:800;
+}
+
+.coachButtons{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:3px;
+}
+
+.coachButtons4{
+  grid-template-columns:repeat(4,1fr);
+}
+
+.coachButtons button,
+.coachShouts button{
+  border:1px solid #ffffff16;
+  background:#ffffff08;
+  border-radius:7px;
+  min-height:24px;
+  padding:3px;
+  color:#c9d8cf;
+  font-size:6.5px;
+  font-weight:900;
+}
+
+.coachButtons button.active{
+  background:#65fb9e22;
+  border-color:#65fb9e;
+  color:#9effbf;
+}
+
+.coachShouts{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:4px;
+  margin-top:8px;
+}
+
+.coachShouts button{
+  min-height:28px;
+  background:#49361755;
+  border-color:#d8b35440;
+  color:#f0d690;
+}
+
+.coachShouts button.active{
+  background:#d6aa3933;
+  border-color:#f0ca63;
+  color:#ffe798;
+}
+
+.coachToggle{
+  position:absolute;
+  right:var(--sr);
+  bottom:calc(var(--sb) + 10px);
+  z-index:18;
+  border:1px solid #d8b35455;
+  background:#201b0fcf;
+  color:#efd280;
+  border-radius:10px;
+  padding:8px 11px;
+  font-size:8px;
+  font-weight:1000;
+  letter-spacing:.08em;
+}
+
+@media (orientation:landscape) and (max-height:430px){
+  .coachPanel{
+    width:238px;
+    padding:7px;
+    max-height:calc(100vh - var(--st) - var(--sb) - 58px);
+  }
+
+  .coachHead{margin-bottom:4px}
+  .coachLive{padding:4px 6px;margin-bottom:4px;font-size:7px}
+  .coachGroup{margin-top:4px}
+  .coachGroup>span{font-size:6px;margin-bottom:2px}
+  .coachButtons button,.coachShouts button{min-height:21px;font-size:5.8px}
+  .coachShouts{margin-top:5px;gap:3px}
+  .coachShouts button{min-height:24px}
+}
+
+
+/* =========================================================
+   v1.2.1 — August 2026 Russian league broadcast scorebugs
+   Current competition branding:
+   Alpha-Bank RPL / Liga PARI / LEON Second League A.
+   ========================================================= */
+
+.hud{
+  --sb-bg:#0e1532;
+  --sb-fg:#fff;
+  --sb-muted:#b8bfd6;
+  --sb-accent:#6c60ff;
+  --sb-accent2:#272053;
+  position:absolute;
+  z-index:13;
+  top:max(calc(var(--st) + 7px),calc(env(safe-area-inset-top) + 7px));
+  left:max(calc(var(--sl) + 52px),calc(env(safe-area-inset-left) + 52px));
+  transform:none;
+  display:grid;
+  grid-template-columns:auto auto auto;
+  grid-template-areas:
+    "brand core clock"
+    "brand label label";
+  gap:0;
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+  color:var(--sb-fg);
+  pointer-events:none;
+  filter:drop-shadow(0 2px 5px #0008);
+}
+
+.leagueMark{
+  grid-area:brand;
+  min-width:55px;
+  height:34px;
+  padding:4px 7px 4px 5px;
+  display:flex;
+  align-items:center;
+  gap:5px;
+  background:var(--sb-accent);
+  color:#fff;
+  clip-path:polygon(0 0,90% 0,100% 50%,90% 100%,0 100%,6% 50%);
+}
+.leagueMarkIcon{
+  width:22px;height:22px;flex:0 0 22px;
+  display:grid;place-items:center;
+  border:1px solid #ffffffaa;
+  border-radius:5px;
+  font-size:7px;
+  line-height:1;
+  font-weight:1000;
+  letter-spacing:-.04em;
+}
+.leagueMarkText{display:flex;flex-direction:column;min-width:0;line-height:.9}
+.leagueMarkText small{font-size:4.6px;font-weight:1000;letter-spacing:.04em;white-space:nowrap}
+.leagueMarkText b{font-size:7px;font-weight:1000;white-space:nowrap}
+
+.scoreCore{
+  grid-area:core;
+  height:34px;
+  display:flex;
+  align-items:stretch;
+  background:var(--sb-bg);
+  overflow:hidden;
+}
+.scoreTeam{
+  position:relative;
+  min-width:55px;
+  padding:0 7px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  color:var(--sb-fg);
+  font-size:10px;
+  font-weight:1000;
+  letter-spacing:.025em;
+  background:linear-gradient(180deg,#ffffff09,#0000000e);
+}
+.scoreTeam img{
+  width:18px!important;
+  height:18px!important;
+  object-fit:contain;
+  filter:drop-shadow(0 1px 1px #0008);
+}
+.scoreTeam .teamStripe{
+  position:absolute;bottom:0;height:2px;width:100%;left:0;
+}
+.scoreTeamHome .teamStripe{background:var(--home-accent,#fff)}
+.scoreTeamAway .teamStripe{background:var(--away-accent,#fff)}
+.score{
+  min-width:42px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0 7px;
+  background:#f8f9fb;
+  color:#10131c;
+  font-size:13px;
+  line-height:1;
+  font-weight:1000;
+  letter-spacing:-.04em;
+  white-space:nowrap;
+}
+.clock{
+  grid-area:clock;
+  height:34px;
+  min-width:47px;
+  padding:0 7px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:var(--sb-accent2);
+  color:#fff;
+  font-variant-numeric:tabular-nums;
+  font-size:9px;
+  line-height:1;
+  font-weight:900;
+  letter-spacing:.015em;
+}
+.competitionLabel{
+  grid-area:label;
+  position:static;
+  height:10px;
+  padding:2px 7px 1px;
+  display:flex;
+  align-items:center;
+  background:#070a13d9;
+  color:var(--sb-muted);
+  font-size:4.7px;
+  line-height:1;
+  font-weight:900;
+  letter-spacing:.07em;
+  white-space:nowrap;
+  text-align:left;
+}
+
+/* Alpha-Bank RPL — dark indigo TV package + red 2026/27 title accent. */
+.hud.score-rpl{
+  --sb-bg:#15162f;
+  --sb-fg:#fff;
+  --sb-muted:#c8cae2;
+  --sb-accent:#2b215d;
+  --sb-accent2:#ef3124;
+}
+.hud.score-rpl .leagueMark{
+  background:linear-gradient(135deg,#20164c 0 64%,#ee3025 64% 100%);
+}
+.hud.score-rpl .leagueMarkIcon{
+  border-radius:50%;
+  border-color:#ffffffcc;
+  background:#080a15bb;
+}
+.hud.score-rpl .scoreCore{border-top:1px solid #5c5792aa}
+.hud.score-rpl .clock{font-size:9.5px}
+
+/* Liga PARI — current mint/black brand identity. */
+.hud.score-fnl1{
+  --sb-bg:#070b0c;
+  --sb-fg:#fff;
+  --sb-muted:#8fe8dc;
+  --sb-accent:#31e5d1;
+  --sb-accent2:#0d1b1b;
+}
+.hud.score-fnl1 .leagueMark{
+  background:#31e5d1;
+  color:#06100e;
+  clip-path:polygon(0 0,86% 0,100% 50%,86% 100%,0 100%,10% 50%);
+}
+.hud.score-fnl1 .leagueMarkIcon{
+  color:#06100e;border-color:#06100e;border-radius:2px;
+  transform:rotate(45deg);width:20px;height:20px;flex-basis:20px;
+}
+.hud.score-fnl1 .leagueMarkIcon::first-letter{transform:rotate(-45deg)}
+.hud.score-fnl1 .leagueMarkText small,
+.hud.score-fnl1 .leagueMarkText b{color:#06100e}
+.hud.score-fnl1 .score{
+  background:#31e5d1;
+  color:#07100f;
+}
+.hud.score-fnl1 .clock{
+  background:#07100f;
+  border-left:1px solid #31e5d155;
+  color:#bffaf2;
+}
+.hud.score-fnl1 .competitionLabel{background:#06100fee;color:#65d7ca}
+
+/* LEON Second League A — black / signal red pentagonal package. */
+.hud.score-fnl2{
+  --sb-bg:#11161b;
+  --sb-fg:#fff;
+  --sb-muted:#ff9aa2;
+  --sb-accent:#ef233c;
+  --sb-accent2:#1a1d22;
+}
+.hud.score-fnl2 .leagueMark{
+  min-width:58px;
+  background:#12171c;
+  border-top:2px solid #ed1b35;
+  border-bottom:2px solid #ed1b35;
+  clip-path:polygon(12% 0,88% 0,100% 50%,88% 100%,12% 100%,0 50%);
+}
+.hud.score-fnl2 .leagueMarkIcon{
+  border:0;
+  border-radius:0;
+  background:#ed1b35;
+  clip-path:polygon(50% 0,100% 35%,82% 100%,18% 100%,0 35%);
+  font-size:13px;
+}
+.hud.score-fnl2 .leagueMarkText small{color:#ff374e}
+.hud.score-fnl2 .score{background:#ed1b35;color:#fff}
+.hud.score-fnl2 .clock{background:#0c0f12;border-left:1px solid #ed1b3560}
+.hud.score-fnl2 .competitionLabel{background:#101317eb;color:#d57880}
+
+/* Cup competitions get their own neutral packages instead of a wrong league HUD. */
+.hud.score-cup{
+  --sb-bg:#111823;--sb-muted:#d9c0a6;--sb-accent:#ff7a18;--sb-accent2:#2d1b10;
+}
+.hud.score-cup .leagueMark{background:linear-gradient(135deg,#f36d16,#8d2a0c)}
+.hud.score-cup .score{background:#ff7a18;color:#17100a}
+.hud.score-supercup{
+  --sb-bg:#11151c;--sb-muted:#e7d7a7;--sb-accent:#d7ad49;--sb-accent2:#201b10;
+}
+.hud.score-supercup .leagueMark{background:linear-gradient(135deg,#d5aa45,#7f642b);color:#10100d}
+.hud.score-supercup .score{background:#d7ad49;color:#14120d}
+
+/* Keep the Match TV bug independent from the competition scorebug. */
+#game.score-fnl1 .broadcastBug,
+#game.score-fnl2 .broadcastBug{
+  opacity:.94;
+}
+
+@media (orientation:landscape) and (max-height:430px){
+  .hud{
+    top:max(calc(var(--st) + 5px),calc(env(safe-area-inset-top) + 5px));
+    left:max(calc(var(--sl) + 48px),calc(env(safe-area-inset-left) + 48px));
+  }
+  .leagueMark,.scoreCore,.clock{height:30px}
+  .leagueMark{min-width:49px;padding:3px 6px 3px 4px;gap:4px}
+  .leagueMarkIcon{width:19px;height:19px;flex-basis:19px;font-size:6px}
+  .leagueMarkText small{font-size:4px}
+  .leagueMarkText b{font-size:6.3px}
+  .scoreTeam{min-width:48px;padding:0 5px;gap:4px;font-size:9px}
+  .scoreTeam img{width:16px!important;height:16px!important}
+  .score{min-width:37px;padding:0 5px;font-size:12px}
+  .clock{min-width:42px;padding:0 5px;font-size:8px!important}
+  .competitionLabel{height:9px;padding:1.5px 5px;font-size:4px}
+}
+
+@media (orientation:landscape) and (max-width:760px){
+  .scoreTeam img{display:none}
+  .scoreTeam{min-width:42px}
+  .leagueMarkText{display:none}
+  .leagueMark{min-width:30px}
+}
