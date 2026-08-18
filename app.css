@@ -1257,3 +1257,129 @@ canvas,
   .leagueMarkText{display:none}
   .leagueMark{min-width:30px}
 }
+
+
+/* =========================================================
+   v1.3.0 — Internet stadium + original competition artwork
+   ========================================================= */
+#game{
+  position:fixed;
+  overflow:hidden;
+  isolation:isolate;
+  background:#07100b;
+}
+
+.stadiumBackdrop{
+  position:absolute;
+  inset:-12px;
+  z-index:0;
+  background:
+    radial-gradient(ellipse at 50% 15%,#59655e 0 8%,transparent 34%),
+    linear-gradient(180deg,#1d2924 0 22%,#0b120f 22% 100%);
+  background-position:center;
+  background-size:cover;
+  filter:saturate(.82) brightness(.48) contrast(1.12);
+  transform:scale(1.035);
+  transition:background-image .28s ease,filter .28s ease;
+}
+.stadiumBackdrop.stadiumOnline{filter:saturate(.92) brightness(.52) contrast(1.10)}
+.stadiumBackdrop.stadiumLoading::after{
+  content:"ПОИСК СТАДИОНА…";
+  position:absolute;
+  left:50%;bottom:8px;transform:translateX(-50%);
+  padding:3px 8px;border-radius:99px;
+  background:#050907aa;color:#b9c6bf;
+  font-size:5.5px;font-weight:900;letter-spacing:.08em;
+}
+.stadiumVignette{
+  position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:
+    linear-gradient(90deg,#0009 0 2.2%,transparent 9% 91%,#0009 97.8% 100%),
+    linear-gradient(180deg,#0008 0 5%,transparent 17% 82%,#000a 100%);
+  box-shadow:inset 0 0 80px #0009;
+}
+.pitchFrame{
+  position:absolute;
+  z-index:2;
+  left:max(calc(var(--sl) + 20px),3.4vw);
+  right:max(calc(var(--sr) + 20px),3.4vw);
+  top:max(calc(var(--st) + 20px),5.4vh);
+  bottom:max(calc(var(--sb) + 19px),5.2vh);
+  overflow:hidden;
+  border:2px solid #edf4ef;
+  border-radius:2px;
+  background:#176b3b;
+  box-shadow:
+    0 0 0 7px #07100dcc,
+    0 0 0 9px #d7ded91f,
+    0 8px 28px #000c;
+}
+.pitchFrame::before,.pitchFrame::after{
+  content:"";
+  position:absolute;
+  z-index:6;
+  left:0;right:0;
+  height:9px;
+  pointer-events:none;
+  background-color:#070b09e8;
+  background-image:var(--competition-mark);
+  background-repeat:repeat-x;
+  background-position:center;
+  background-size:auto 7px;
+  opacity:.9;
+}
+.pitchFrame::before{top:0}
+.pitchFrame::after{bottom:0}
+#pitch{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  display:block;
+  touch-action:none;
+}
+
+.leagueMark{min-width:78px;padding:3px 7px 3px 5px}
+.leagueMarkPicture{
+  width:54px;height:27px;flex:0 0 54px;
+  display:grid;place-items:center;
+  overflow:hidden;
+}
+.leagueMarkImage{
+  display:none;
+  width:100%!important;
+  height:100%!important;
+  max-width:54px;
+  object-fit:contain;
+  filter:drop-shadow(0 1px 1px #0008);
+}
+.leagueMarkIcon.hiddenFallback{display:none!important}
+.hud.score-rpl .leagueMarkImage{max-width:58px}
+.hud.score-fnl1 .leagueMarkImage{max-width:48px}
+.hud.score-fnl2 .leagueMarkImage{max-width:48px}
+.hud.score-cup .leagueMark{min-width:86px}
+.hud.score-cup .leagueMarkPicture{width:68px;flex-basis:68px}
+.hud.score-cup .leagueMarkImage{max-width:68px;object-fit:cover;border-radius:2px}
+.hud.score-supercup .leagueMark{min-width:83px}
+.hud.score-supercup .leagueMarkPicture{width:64px;flex-basis:64px}
+.hud.score-supercup .leagueMarkImage{max-width:64px}
+
+/* Original artwork becomes primary; tiny text stays useful when the remote mark is unavailable. */
+.leagueMark:has(.leagueMarkImage[style*="block"]) .leagueMarkText{display:none}
+
+@media (orientation:landscape) and (max-height:430px){
+  .pitchFrame{
+    left:max(calc(var(--sl) + 16px),2.8vw);
+    right:max(calc(var(--sr) + 16px),2.8vw);
+    top:max(calc(var(--st) + 15px),4.5vh);
+    bottom:max(calc(var(--sb) + 15px),4.3vh);
+  }
+  .pitchFrame::before,.pitchFrame::after{height:7px;background-size:auto 5px}
+  .leagueMark{min-width:66px!important}
+  .leagueMarkPicture{width:45px;height:23px;flex-basis:45px}
+  .leagueMarkImage{max-width:45px!important}
+  .hud.score-cup .leagueMarkPicture,
+  .hud.score-supercup .leagueMarkPicture{width:54px;flex-basis:54px}
+  .hud.score-cup .leagueMarkImage,
+  .hud.score-supercup .leagueMarkImage{max-width:54px!important}
+}

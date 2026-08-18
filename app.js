@@ -211,7 +211,7 @@ window.App={
 
         <div class="card">
           <b>ИИ матча</b>
-          <p>v1.2.2 Team IQ: рейтинг клуба влияет на решения, прессинг, передачи, первый приём, забегания, завершение и вратаря.</p>
+          <p>v1.3.0 Team IQ: рейтинг клуба влияет на решения, прессинг, передачи, первый приём, забегания, завершение и вратаря.</p>
         </div>`;
 
       this.$("#play")?.addEventListener("click",()=>this.playFixture(f,"player"));
@@ -385,6 +385,11 @@ window.App={
     this.$("#leagueMarkMain").textContent=meta.main;
     this.$("#leagueMarkIcon").textContent=meta.icon;
     this.$("#competitionLabel").textContent=(mode==="coach"?"ТРЕНЕР • ":"")+meta.label;
+
+    // Original competition artwork is loaded from the internet; text remains as fallback.
+    BroadcastVisuals.bindScoreboard(this.$("#leagueMarkImage"),this.$("#leagueMarkIcon"),theme);
+    const mark=BroadcastVisuals.competitionImageUrl(theme);
+    if(mark)game.style.setProperty("--competition-mark",`url("${mark}")`);
   },
 
   playFixture(f,mode="player"){
@@ -398,6 +403,9 @@ window.App={
     this.$("#hName").textContent=h.abbr;
     this.$("#aName").textContent=a.abbr;
     this.applyScoreboardTheme(f,h,a,mode);
+
+    // Home-club stadium image is resolved online from Wikimedia/Wikipedia.
+    StadiumVisuals.bind(this.$("#stadiumBackdrop"),h,this.scoreboardThemeForFixture(f));
 
     Logos.bind(this.$("#hLogo"),h);
     Logos.bind(this.$("#aLogo"),a);

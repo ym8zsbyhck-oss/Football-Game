@@ -49,11 +49,14 @@ window.MatchEngine = class {
   resize(){
     const oldW=this.W||innerWidth,oldH=this.H||innerHeight;
     const vv=window.visualViewport;
-    const nw=Math.round(vv?vv.width:innerWidth),nh=Math.round(vv?vv.height:innerHeight);
+    // v1.3.0: the pitch canvas sits inside a stadium frame, so use its real CSS size.
+    const rect=this.canvas.getBoundingClientRect?.();
+    const nw=Math.max(320,Math.round(rect?.width||this.canvas.clientWidth||(vv?vv.width:innerWidth)));
+    const nh=Math.max(220,Math.round(rect?.height||this.canvas.clientHeight||(vv?vv.height:innerHeight)));
     this.W=nw;this.H=nh;
     const d=Math.min(devicePixelRatio||1,2);
     this.canvas.width=nw*d;this.canvas.height=nh*d;
-    this.canvas.style.width=nw+"px";this.canvas.style.height=nh+"px";
+    this.canvas.style.width="100%";this.canvas.style.height="100%";
     this.ctx.setTransform(d,0,0,d,0,0);
     if(this.players.length&&oldW&&oldH&&(oldW!==nw||oldH!==nh)){
       const sx=nw/oldW,sy=nh/oldH;
