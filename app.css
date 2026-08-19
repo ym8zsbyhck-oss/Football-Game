@@ -1383,3 +1383,32 @@ canvas,
   .hud.score-cup .leagueMarkImage,
   .hud.score-supercup .leagueMarkImage{max-width:54px!important}
 }
+
+/* v1.3.1 */
+.standardScoreboard{display:contents}.rplLiveScore{display:none}
+.hud.score-rpl{display:block;filter:drop-shadow(0 2px 5px #0009)}
+.hud.score-rpl .standardScoreboard{display:none}
+.hud.score-rpl .rplLiveScore{width:156px;height:56px;display:grid;grid-template-columns:43px 113px;grid-template-rows:28px 28px;overflow:hidden;background:#fff}
+.rplBearCell{grid-column:1;grid-row:1;background:#14264f;display:grid;place-items:center}
+.rplBearCell img{display:none;width:29px;height:29px;object-fit:contain;filter:grayscale(1) brightness(0) invert(1)}
+.rplBearCell .hiddenFallback{display:none!important}.rplBearCell span{color:#fff;font-size:7px;font-weight:1000}
+.rplLiveClock{grid-column:1;grid-row:2;display:flex;align-items:center;justify-content:center;background:#f4f5f8;color:#0d1528;font-size:9px;font-weight:1000}
+.rplLiveRows{grid-column:2;grid-row:1/span 2;display:grid;grid-template-rows:1fr 1fr}
+.rplLiveRow{display:grid;grid-template-columns:minmax(0,1fr) 4px 30px;border-bottom:1px solid #c9cfdb}
+.rplLiveRow:last-child{border-bottom:0}.rplLiveRow b{padding:0 8px;display:flex;align-items:center;background:#eef0f5;color:#121a2e;font-size:11px;font-weight:1000}
+.rplLiveRow i{background:var(--rpl-home,#159de0)}.rplLiveRow:last-child i{background:var(--rpl-away,#f04c32)}
+.rplLiveRow strong{display:flex;align-items:center;justify-content:center;background:#152a57;color:#fff;font-size:15px}
+
+.matchResultOverlay{background:#020713e8;z-index:60}
+.matchResultCard{position:relative;width:min(760px,90vw);height:min(340px,84vh);max-width:none;overflow:hidden;border-radius:3px;padding:0;background:#0b1737;color:#fff}
+.resultTopBand{position:relative;z-index:3;height:46px;background:#0c1427;display:flex;align-items:center}
+.resultLeagueIdentity{height:100%;padding:0 18px;display:flex;align-items:center;gap:9px}.resultLeagueIdentity img{display:none;width:29px;height:29px;object-fit:contain}
+.resultLeagueIdentity .hiddenFallback{display:none!important}.resultLeagueIdentity b{font-size:11px}.resultLeagueIdentity span{font-size:8px;font-weight:1000}
+.resultChevron{position:absolute;inset:46px 0 42px;z-index:1;background:linear-gradient(135deg,transparent 46%,#1d3d82 46% 54%,transparent 54%) center -92px/420px 210px no-repeat,linear-gradient(45deg,transparent 46%,#183572 46% 54%,transparent 54%) center 20px/590px 295px no-repeat,#10245b}
+.resultTeams{position:relative;z-index:3;height:225px;display:grid;grid-template-columns:1fr 130px 1fr;align-items:start;padding:36px 70px 0}
+.resultTeam{text-align:center;min-width:0}.resultTeam>img{width:74px;height:74px;object-fit:contain}.resultTeam>b{display:block;margin-top:8px;font-size:17px;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.resultScore{padding-top:5px;text-align:center;font-size:54px;line-height:1}.resultScorers{margin-top:8px;display:flex;flex-direction:column;gap:3px;font-size:10px;color:#d9e0f3}.noScorers{opacity:.45}
+.resultText{position:absolute;bottom:8px;left:18px;right:170px;margin:0;font-size:9px;color:#c6cee1}.resultActions{position:absolute;z-index:4;right:14px;bottom:9px}
+.matchResultCard.result-rpl{background:#10245b}.matchResultCard.result-rpl .resultTopBand{background:#ef3224}.matchResultCard.result-rpl .resultTopBand:after{content:"";position:absolute;right:0;top:0;bottom:0;width:34%;background:#962b3f}.matchResultCard.result-rpl .resultLeagueIdentity{position:relative;z-index:2}.matchResultCard.result-rpl .resultLeagueIdentity img{filter:grayscale(1) brightness(0) invert(1)}
+
+.seasonFinished>span{display:block;color:#79eca8;font-size:8px;font-weight:1000;letter-spacing:.09em}.seasonFinished>b{display:block;margin-top:5px;font-size:22px}.seasonFinished p{margin:5px 0 10px;color:#c4d5ca}

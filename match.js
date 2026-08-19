@@ -338,7 +338,7 @@ window.MatchEngine = class {
     this.ball={
       x:this.W/2,y:this.H/2,vx:0,vy:0,r:6,owner:null,lastTeam:team,state:"dead",
       pickupLock:0,ignorePlayer:-1,lastPassTeam:-1,lastPassTarget:-1,
-      spin:0,spinSpeed:0,shotId:0,isShot:false,shotTeam:-1
+      spin:0,spinSpeed:0,shotId:0,isShot:false,shotTeam:-1,shotPlayer:-1
     };
 
     const attackDir=team===0?1:-1;
@@ -528,7 +528,10 @@ window.MatchEngine = class {
     this.ball.vx=vx;this.ball.vy=vy;this.ball.lastTeam=p.team;this.ball.ignorePlayer=i;this.ball.pickupLock=.20;
     this.ball.spinSpeed=Math.min(24,mag/20)*(vy>=0?1:-1);
     if(isPass){this.stats[p.team].passes++;this.ball.lastPassTeam=p.team;this.ball.lastPassTarget=passTarget}
-    if(isShot){this.shotSerial++;this.ball.shotId=this.shotSerial;this.ball.isShot=true;this.ball.shotTeam=p.team}
+    if(isShot){
+      this.shotSerial++;this.ball.shotId=this.shotSerial;this.ball.isShot=true;
+      this.ball.shotTeam=p.team;this.ball.shotPlayer=i;
+    }
   }
 
   aimDirection(p){
@@ -1432,11 +1435,15 @@ window.MatchEngine = class {
     // Previously scoring was checked behind the net, so the out-of-bounds
     // restart fired first and valid shots were incorrectly turned into goal kicks.
     if(this.ball.owner===null&&this.ball.x>=B.r&&this.ball.y>gt&&this.ball.y<gb){
-      this.score[0]++;this.events.push({half:this.half,minute:this.displayMinute(),type:"Гол",team:0,text:`Гол — ${this.home.name}`});
+      const si=this.ball.shotTeam===0?this.ball.shotPlayer:-1;
+      const scorer=this.players[si]?.team===0?this.players[si].name:this.home.name;
+      this.score[0]++;this.events.push({half:this.half,minute:this.displayMinute(),type:"Гол",team:0,player:scorer,playerIndex:si,text:`${scorer} — гол`});
       this.lastGoalTime=this.elapsed;this.kickoff(1);return;
     }
     if(this.ball.owner===null&&this.ball.x<=B.l&&this.ball.y>gt&&this.ball.y<gb){
-      this.score[1]++;this.events.push({half:this.half,minute:this.displayMinute(),type:"Гол",team:1,text:`Гол — ${this.away.name}`});
+      const si=this.ball.shotTeam===1?this.ball.shotPlayer:-1;
+      const scorer=this.players[si]?.team===1?this.players[si].name:this.away.name;
+      this.score[1]++;this.events.push({half:this.half,minute:this.displayMinute(),type:"Гол",team:1,player:scorer,playerIndex:si,text:`${scorer} — гол`});
       this.lastGoalTime=this.elapsed;this.kickoff(0);return;
     }
 

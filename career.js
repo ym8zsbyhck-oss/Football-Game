@@ -90,8 +90,22 @@ window.Career = {
     return this.listSlots();
   },
 
-  leagueClubs(league,group=null){
+  baseLeagueClubs(league,group=null){
     return DB.clubs.filter(c=>c.league===league && (!group || c.group===group));
+  },
+
+  leagueClubs(league,group=null){
+    const useSavedPool=this.state &&
+      this.state.league===league &&
+      (league!=="fnl2" || (this.state.group||"gold")===(group||"gold")) &&
+      Array.isArray(this.state.leagueMembers) &&
+      this.state.leagueMembers.length;
+
+    if(useSavedPool){
+      const pool=this.state.leagueMembers.map(id=>this.clubById(id)).filter(Boolean);
+      if(pool.length)return pool;
+    }
+    return this.baseLeagueClubs(league,group);
   },
 
   clubById(id){return DB.clubs.find(c=>c.id===id)},
@@ -149,13 +163,14 @@ window.Career = {
     // The Cup Regions path needs this.state/this.club() while creating
     // its first opponent, so cup/supercup are attached only afterwards.
     this.state={
-      version:"1.2.0",
+      version:"1.3.1",
       clubId:club.id,
       league:club.league,
       group,
       stage:1,
       season:2026,
       round:1,
+      leagueMembers:pool.map(c=>c.id),
       standings,
       fixtures:this.makeLeagueFixtures(club),
       lastResult:"",
@@ -170,6 +185,8 @@ window.Career = {
         build:"balanced"
       },
       trophies:[],
+      history:[],
+      seasonEnd:null,
       cup:null,
       supercup:null
     };
@@ -193,8 +210,16 @@ window.Career = {
     const club=this.clubById(this.state.clubId);
     if(!club)return this.state;
 
-    this.state.version="1.2.0";
+    this.state.version="1.3.1";
     if(!Array.isArray(this.state.trophies))this.state.trophies=[];
+    if(!Array.isArray(this.state.history))this.state.history=[];
+    if(!Array.isArray(this.state.leagueMembers)||!this.state.leagueMembers.length){
+      this.state.leagueMembers=(this.state.standings||[]).map(r=>r.id);
+      if(!this.state.leagueMembers.length){
+        this.state.leagueMembers=this.baseLeagueClubs(this.state.league,this.state.group).map(c=>c.id);
+      }
+    }
+    if(this.state.seasonEnd===undefined)this.state.seasonEnd=null;
     if(!this.state.managerTactics){
       this.state.managerTactics={
         mentality:"balanced",
@@ -216,9 +241,12 @@ window.Career = {
       });
     }
 
-    if(!this.state.cup)this.state.cup=this.createCup(club);
-    if(!this.state.supercup)this.state.supercup=this.createSupercup(club);
+    if(!this.state.cup)this.state.cup=this.createCup(this.seasonClub());
+    if(!this.state.supercup)this.state.supercup=this.createSupercup(this.seasonClub());
 
+    const total=(this.state.fixtures||[]).length;
+    if(total&&this.state.round>total)this.state.round=total;
+    this.ensureSeasonEnd();
     return this.state;
   },
 
@@ -229,7 +257,7 @@ window.Career = {
       this.currentSlot=this.firstFreeSlot()||1;
     }
 
-    this.state.version="1.2.0";
+    this.state.version="1.3.1";
     this.state.savedAt=new Date().toISOString();
     this.state.saveSlot=this.currentSlot;
 
@@ -267,6 +295,204 @@ window.Career = {
     // Re-save migrated structures only into the slot that was opened.
     this.save();
     return this.state;
+  },
+
+
+  seasonClub(league=this.state?.league,group=this.state?.group){
+    const c=this.clubById(this.state?.clubId);
+    return c?{...c,league,group}:null;
+  },
+
+  seasonLabel(year=this.state?.season||2026){
+    return `${year}/${String(year+1).slice(-2)}`;
+  },
+
+  leaguePlayed(){return (this.state?.fixtures||[]).filter(f=>f.played).length},
+  leagueTotal(){return (this.state?.fixtures||[]).length},
+  leagueProgressText(){
+    const total=this.leagueTotal();
+    return total?`${this.leaguePlayed()}/${total}`:"—";
+  },
+
+  finalPosition(){
+    return this.sorted().findIndex(r=>r.id===this.state.clubId)+1;
+  },
+
+  seasonOutcome(){
+    const pos=this.finalPosition(), n=this.state.standings.length;
+    const league=this.state.league, group=this.state.group;
+
+    if(league==="rpl"){
+      if(pos===1)return {type:"champion",label:"Чемпион РПЛ",league:"rpl",group:null};
+      if(pos<=12)return {type:"stay",label:"Сохранение места в РПЛ",league:"rpl",group:null};
+      if(pos<=14)return {type:"playoff-rpl",label:"Переходные матчи за место в РПЛ",league:"rpl",group:null};
+      return {type:"relegate",label:"Вылет в Первую лигу",league:"fnl1",group:null};
+    }
+
+    if(league==="fnl1"){
+      if(pos<=2)return {type:"promote",label:"Выход в РПЛ",league:"rpl",group:null};
+      if(pos<=4)return {type:"playoff-fnl1",label:"Переходные матчи за выход в РПЛ",league:"fnl1",group:null};
+      if(pos>=n-2)return {type:"relegate",label:"Вылет во Вторую лигу А",league:"fnl2",group:"gold"};
+      return {type:"stay",label:"Сохранение места в Первой лиге",league:"fnl1",group:null};
+    }
+
+    if(league==="fnl2"&&group==="gold"){
+      if(pos<=2)return {type:"promote",label:"Выход в Первую лигу",league:"fnl1",group:null};
+      if(pos>=n-1)return {type:"relegate",label:"Переход в Серебро",league:"fnl2",group:"silver"};
+      return {type:"stay",label:"Сохранение места в Золоте",league:"fnl2",group:"gold"};
+    }
+
+    if(league==="fnl2"){
+      if(pos<=2)return {type:"promote",label:"Переход в Золото",league:"fnl2",group:"gold"};
+      return {type:"stay",label:"Сохранение места в Серебре",league:"fnl2",group:"silver"};
+    }
+
+    return {type:"stay",label:"Сезон завершён",league,group};
+  },
+
+  ensureSeasonEnd(){
+    if(!this.state)return null;
+    if(this.state.seasonEnd)return this.state.seasonEnd;
+    const leagueDone=(this.state.fixtures||[]).length>0&&(this.state.fixtures||[]).every(f=>f.played);
+    if(!leagueDone||this.nextFixture())return null;
+
+    this.state.seasonEnd={
+      season:this.state.season,
+      label:this.seasonLabel(),
+      position:this.finalPosition(),
+      outcome:this.seasonOutcome(),
+      table:this.sorted().map(r=>({...r}))
+    };
+    return this.state.seasonEnd;
+  },
+
+  simulatePlayoff(type){
+    const user=this.club();
+    const pool=type==="playoff-rpl"
+      ? this.baseLeagueClubs("fnl1").slice().sort((a,b)=>(b.rating||70)-(a.rating||70))
+      : this.baseLeagueClubs("rpl").slice().sort((a,b)=>(a.rating||70)-(b.rating||70));
+    const opp=pool[Math.min(3,pool.length-1)]||pool[0];
+    if(!opp)return {won:type==="playoff-rpl",text:"Переходные матчи"};
+
+    let ug=0,og=0;
+    for(let i=0;i<2;i++){
+      ug+=this.simGoals(user,opp);
+      og+=this.simGoals(opp,user);
+    }
+    let won=ug>og, pens=null;
+    if(ug===og){
+      pens=this.penaltyShootout(user.id,opp.id);
+      won=pens.winner===user.id;
+    }
+    let text=`Переходные матчи: ${user.name} ${ug}:${og} ${opp.name}`;
+    if(pens)text+=` (${pens.home}:${pens.away} пен.)`;
+    return {won,text};
+  },
+
+  nextLeagueMembers(targetLeague,targetGroup){
+    const same=targetLeague===this.state.league &&
+      (targetLeague!=="fnl2" || (targetGroup||"gold")===(this.state.group||"gold"));
+
+    let pool=same
+      ? (this.state.leagueMembers||[]).map(id=>this.clubById(id)).filter(Boolean)
+      : this.baseLeagueClubs(targetLeague,targetGroup).slice();
+
+    const user=this.club();
+    if(user&&!pool.some(c=>c.id===user.id)){
+      pool.sort((a,b)=>(b.rating||70)-(a.rating||70));
+      if(pool.length)pool.pop();
+      pool.push(user);
+    }
+    return pool.map(c=>c.id);
+  },
+
+  cupGroupsForSeason(club){
+    const cfg=DB.russianCup2026;
+    if((this.state?.season||2026)===2026){
+      const official=Object.values(cfg.rplGroups).flat();
+      if(official.includes(club.id))return JSON.parse(JSON.stringify(cfg.rplGroups));
+    }
+
+    let pool=(club.league==="rpl"?this.leagueClubs("rpl"):this.baseLeagueClubs("rpl")).slice();
+    if(club.league==="rpl"&&!pool.some(c=>c.id===club.id)){
+      pool.sort((a,b)=>(b.rating||70)-(a.rating||70));
+      if(pool.length)pool.pop();
+      pool.push(club);
+    }
+    pool.sort((a,b)=>(b.rating||70)-(a.rating||70));
+    const out={A:[],B:[],C:[],D:[]}, keys=["A","B","C","D"];
+    pool.slice(0,16).forEach((c,i)=>{
+      const band=Math.floor(i/4), j=i%4;
+      out[keys[band%2===0?j:3-j]].push(c.id);
+    });
+    return out;
+  },
+
+  advanceSeason(){
+    const end=this.ensureSeasonEnd();
+    if(!end)return null;
+
+    const oldLeague=this.state.league, oldGroup=this.state.group||null;
+    const oldYear=this.state.season, pos=end.position;
+    const outcome=end.outcome;
+    let targetLeague=outcome.league, targetGroup=outcome.group, playoff=null;
+
+    if(outcome.type==="playoff-rpl"){
+      playoff=this.simulatePlayoff("playoff-rpl");
+      targetLeague=playoff.won?"rpl":"fnl1";
+      targetGroup=null;
+    }else if(outcome.type==="playoff-fnl1"){
+      playoff=this.simulatePlayoff("playoff-fnl1");
+      targetLeague=playoff.won?"rpl":"fnl1";
+      targetGroup=null;
+    }
+
+    if(pos===1){
+      const title=`${DB.leagues[oldLeague]?.name||"Лига"} ${this.seasonLabel(oldYear)}`;
+      if(!this.state.trophies.includes(title))this.state.trophies.push(title);
+    }
+
+    this.state.history.push({
+      season:oldYear,
+      label:this.seasonLabel(oldYear),
+      league:oldLeague,
+      group:oldGroup,
+      position:pos,
+      outcome:outcome.label,
+      playoff:playoff?.text||null
+    });
+
+    // IMPORTANT: calculate destination membership before changing state.league.
+    const members=this.nextLeagueMembers(targetLeague,targetGroup);
+
+    this.state.season=oldYear+1;
+    this.state.league=targetLeague;
+    this.state.group=targetLeague==="fnl2"?(targetGroup||"gold"):null;
+    this.state.leagueMembers=members;
+
+    const club=this.seasonClub();
+    const pool=this.leagueClubs(this.state.league,this.state.group);
+    this.state.standings=pool.map(c=>({id:c.id,p:0,w:0,d:0,l:0,gf:0,ga:0,pts:0}));
+    this.state.fixtures=this.makeLeagueFixtures(club);
+    this.state.round=1;
+    this.state.stage=1;
+    this.state.lastResult=playoff?.text||`Начат сезон ${this.seasonLabel()}`;
+    this.state.seasonEnd=null;
+    this.state.cup=this.createCup(club);
+
+    // Future Super Cups are kept non-blocking unless the existing 2026 fixture applies.
+    this.state.supercup={
+      competition:"supercup",
+      season:String(this.state.season),
+      eligible:false,
+      status:"completed",
+      winner:null,
+      result:"Суперкубок нового сезона рассчитан вне календаря карьеры",
+      fixture:null
+    };
+
+    this.save();
+    return {season:this.state.season,league:this.state.league,group:this.state.group,playoff};
   },
 
   sorted(){
@@ -351,9 +577,10 @@ window.Career = {
 
   createCup(club){
     const cfg=DB.russianCup2026;
+    const cupGroups=this.cupGroupsForSeason(club);
     const cup={
       competition:"cup",
-      season:cfg.season,
+      season:this.seasonLabel(),
       status:"active",
       path:club.league==="rpl"?"rpl":"regions",
       stage:"",
@@ -368,7 +595,7 @@ window.Career = {
     };
 
     if(club.league==="rpl"){
-      for(const [g,ids] of Object.entries(cfg.rplGroups)){
+      for(const [g,ids] of Object.entries(cupGroups)){
         cup.groupTables[g]=ids.map(id=>this.cupEmptyRow(id));
         cup.groupSchedules[g]=this.createGroupSchedule(ids);
         if(ids.includes(club.id))cup.group=g;
@@ -612,7 +839,7 @@ window.Career = {
   },
 
   markCupTrophy(){
-    const title="Кубок России 2026/27";
+    const title=`Кубок России ${this.seasonLabel()}`;
     if(!this.state.trophies.includes(title))this.state.trophies.push(title);
     this.state.cup.status="winner";
     this.state.cup.stage="ОБЛАДАТЕЛЬ КУБКА РОССИИ";
@@ -771,6 +998,7 @@ window.Career = {
     }
 
     this.state.lastResult=display;
+    this.ensureSeasonEnd();
     this.save();
     return {display,pens,competition:"cup"};
   },
@@ -838,6 +1066,7 @@ window.Career = {
     }
 
     this.state.lastResult=display;
+    this.ensureSeasonEnd();
     this.save();
     return {display,pens,competition:"supercup"};
   },
@@ -860,9 +1089,10 @@ window.Career = {
       this.addResult(b.id,g2,g1);
     }
 
-    this.state.round++;
+    this.state.round=Math.min(this.state.fixtures.length,this.state.round+1);
     const display=`${this.clubById(fx.home).name} ${hg}:${ag} ${this.clubById(fx.away).name}`;
     this.state.lastResult=display;
+    this.ensureSeasonEnd();
     this.save();
     return {display,competition:"league"};
   },

@@ -1,5 +1,9 @@
 window.BroadcastVisuals = {
   marks:{
+    rplBear:{
+      alt:"Логотип РПЛ",
+      urls:["https://ru.wikipedia.org/wiki/Special:Redirect/file/Russian%20Premier%20League%20Logo.png"]
+    },
     // 2026/27 Alfa-Bank RPL mark. The original mark is loaded from the web.
     rpl:{
       alt:"Альфа-Банк РПЛ",

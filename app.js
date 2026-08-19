@@ -166,7 +166,7 @@ window.App={
     const c=Career.club();
     this.$("#careerName").textContent=c.name;
     this.$("#careerLeague").textContent=DB.leagues[Career.state.league].name+(Career.state.group?` • ${Career.state.group==="gold"?"Золото":"Серебро"}`:"")+` • РТГ ${c.rating}`;
-    if(this.$("#careerTopBrand"))this.$("#careerTopBrand").textContent=`КАРЬЕРА • СЛОТ ${Career.currentSlot}`;
+    if(this.$("#careerTopBrand"))this.$("#careerTopBrand").textContent=`КАРЬЕРА • СЛОТ ${Career.currentSlot} • ${Career.seasonLabel()}`;
     Logos.bind(this.$("#careerLogo"),c);
     this.show("career");
     this.renderCareer("overview");
@@ -185,7 +185,7 @@ window.App={
       co.innerHTML=`
         <h2>Обзор</h2>
         <div class="stats">
-          <div>Тур лиги<b>${s.round}</b></div>
+          <div>Матчи лиги<b>${Career.leagueProgressText()}</b></div>
           <div>Место<b>${Career.sorted().findIndex(x=>x.id===c.id)+1}</b></div>
           <div>Кубок<b>${s.cup?.status==="winner"?"🏆":s.cup?.status==="eliminated"?"—":"●"}</b></div>
           <div>Трофеи<b>${trophies}</b></div>
@@ -201,7 +201,16 @@ window.App={
               <button id="play" class="primary">ИГРАТЬ САМОМУ</button>
               <button id="coachMatch" class="secondary coachStart">РЕЖИМ ТРЕНЕРА</button>
             </div>
-          `:"<p>Матчей в текущем календаре больше нет.</p>"}
+          `:(()=>{
+            const end=Career.ensureSeasonEnd();
+            if(!end)return "<p>Матчей в текущем календаре больше нет.</p>";
+            return `<div class="seasonFinished">
+              <span>СЕЗОН ${end.label} ЗАВЕРШЁН</span>
+              <b>${end.position}-е место</b>
+              <p>${end.outcome?.label||"Сезон завершён"}</p>
+              <button id="nextSeason" class="primary">ПЕРЕЙТИ В СЕЗОН ${Career.seasonLabel((s.season||2026)+1)}</button>
+            </div>`;
+          })()}
         </div>
 
         <div class="card">
@@ -211,11 +220,14 @@ window.App={
 
         <div class="card">
           <b>ИИ матча</b>
-          <p>v1.3.0 Team IQ: рейтинг клуба влияет на решения, прессинг, передачи, первый приём, забегания, завершение и вратаря.</p>
+          <p>v1.3.1 Team IQ: рейтинг клуба влияет на решения, прессинг, передачи, первый приём, забегания, завершение и вратаря.</p>
         </div>`;
 
       this.$("#play")?.addEventListener("click",()=>this.playFixture(f,"player"));
       this.$("#coachMatch")?.addEventListener("click",()=>this.playFixture(f,"coach"));
+      this.$("#nextSeason")?.addEventListener("click",()=>{
+        if(Career.advanceSeason())this.openCareer();
+      });
     }
 
     else if(tab==="table"){
@@ -385,6 +397,16 @@ window.App={
     this.$("#leagueMarkMain").textContent=meta.main;
     this.$("#leagueMarkIcon").textContent=meta.icon;
     this.$("#competitionLabel").textContent=(mode==="coach"?"ТРЕНЕР • ":"")+meta.label;
+    if(theme==="rpl"){
+      this.$("#rplHomeAbbr").textContent=h?.abbr||"ДОМ";
+      this.$("#rplAwayAbbr").textContent=a?.abbr||"ГОС";
+      this.$("#rplHomeScore").textContent="0";
+      this.$("#rplAwayScore").textContent="0";
+      this.$("#rplLiveClock").textContent="00:00";
+      game.style.setProperty("--rpl-home",h?.color||"#1799da");
+      game.style.setProperty("--rpl-away",a?.color||"#ef4b32");
+      BroadcastVisuals.bindScoreboard(this.$("#rplBearLogo"),this.$("#rplBearFallback"),"rplBear");
+    }
 
     // Original competition artwork is loaded from the internet; text remains as fallback.
     BroadcastVisuals.bindScoreboard(this.$("#leagueMarkImage"),this.$("#leagueMarkIcon"),theme);
@@ -435,9 +457,33 @@ window.App={
   },
 
   finishMatch(sc){
+    const goals=(this.engine?.events||[]).filter(e=>e.type==="Гол").map(e=>({
+      team:e.team,minute:e.minute,player:e.player||"Гол"
+    }));
+    this.currentFixture.goalEvents=goals;
     const result=Career.applyFixture(this.currentFixture,sc[0],sc[1]);
+    this.renderMatchResult(result,sc,goals);
     this.$("#result").style.display="flex";
-    this.$("#resultText").textContent=result.display;
+  },
+
+  renderMatchResult(result,sc,goals){
+    const f=this.currentFixture,h=DB.clubs.find(c=>c.id===f.home),a=DB.clubs.find(c=>c.id===f.away);
+    const theme=this.scoreboardThemeForFixture(f);
+    this.$("#resultCard").className=`modal matchResultCard result-${theme}`;
+    this.$("#resultScore").textContent=`${sc[0]}–${sc[1]}`;
+    this.$("#resultHomeName").textContent=h?.name||f.home;
+    this.$("#resultAwayName").textContent=a?.name||f.away;
+    Logos.bind(this.$("#resultHomeLogo"),h);Logos.bind(this.$("#resultAwayLogo"),a);
+    const list=team=>{
+      const x=goals.filter(g=>g.team===team);
+      return x.length?x.map(g=>`<span><b>${g.player}</b> ${g.minute}'</span>`).join(""):'<span class="noScorers">—</span>';
+    };
+    this.$("#resultHomeScorers").innerHTML=list(0);
+    this.$("#resultAwayScorers").innerHTML=list(1);
+    const meta=this.scoreboardMeta(theme);
+    this.$("#resultCompetitionName").textContent=theme==="rpl"?"АЛЬФА-БАНК РОССИЙСКАЯ ПРЕМЬЕР-ЛИГА":meta.label;
+    BroadcastVisuals.bindScoreboard(this.$("#resultLeagueLogo"),this.$("#resultLeagueFallback"),theme==="rpl"?"rplBear":theme);
+    this.$("#resultText").textContent=theme==="rpl"?"":result.display;
   },
 
   coachLabel(group,value){
@@ -486,7 +532,13 @@ window.App={
       const exact=e.halfElapsed/e.realHalfDuration*45;
       minute=Math.floor(base+exact);sec=Math.floor((exact-Math.floor(exact))*60);
     }
-    this.$("#clock").textContent=String(minute).padStart(2,"0")+":"+String(sec).padStart(2,"0")+(e.addedMinutes&&e.halfElapsed>=e.realHalfDuration?` +${e.addedMinutes}`:"");
+    const clockText=String(minute).padStart(2,"0")+":"+String(sec).padStart(2,"0")+(e.addedMinutes&&e.halfElapsed>=e.realHalfDuration?` +${e.addedMinutes}`:"");
+    this.$("#clock").textContent=clockText;
+    if(this.scoreboardThemeForFixture(this.currentFixture)==="rpl"){
+      this.$("#rplHomeScore").textContent=e.score[0];
+      this.$("#rplAwayScore").textContent=e.score[1];
+      this.$("#rplLiveClock").textContent=clockText;
+    }
 
     if(e.controlMode==="coach"){
       const total=e.stats[0].possession+e.stats[1].possession||1;
